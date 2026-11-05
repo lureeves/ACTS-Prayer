@@ -1,4 +1,4 @@
-import { PrayerCategory, PrayerSubject, PrayerCard, ACTSStage, DailyRotationState, TopicPriority } from '../types/prayer';
+import type { PrayerCategory, PrayerSubject, PrayerCard, ACTSStage, DailyRotationState, TopicPriority } from '../types/prayer';
 
 export interface ActiveSessionItem {
   categoryName: ACTSStage;

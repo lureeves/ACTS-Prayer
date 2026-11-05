@@ -11,7 +11,8 @@ import {
   Flame,
   ArrowUp,
   ArrowDown,
-  Plus
+  Plus,
+  Archive
 } from 'lucide-react';
 import { ACTSStage, ACTS_STAGES, PrayerCard } from '../types/prayer';
 import { ActiveSessionItem } from '../services/scheduler';
@@ -28,6 +29,7 @@ interface GuidedSessionModalProps {
   onTopicPrayed: (categoryName: string, subjectName: string, cards: PrayerCard[]) => void;
   onEditCardText?: (categoryName: string, subjectName: string, card: PrayerCard, newText: string) => void;
   onAddCardUpdate?: (subjectName: string, parentCard: PrayerCard, newText: string) => PrayerCard | null;
+  onArchiveCard?: (subjectName: string, card: PrayerCard) => void;
 }
 
 const STAGE_THEMES: Record<ACTSStage, {
@@ -175,7 +177,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   soundEnabled,
   onTopicPrayed,
   onEditCardText,
-  onAddCardUpdate
+  onAddCardUpdate,
+  onArchiveCard
 }) => {
   const [currentStageIndex, setCurrentStageIndex] = useState<number>(0);
   const [currentTopicIndex, setCurrentTopicIndex] = useState<number>(0);
@@ -183,6 +186,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   const [activePlan, setActivePlan] = useState<Record<ACTSStage, ActiveSessionItem[]>>(sessionPlan);
   const [addingSubPrayerId, setAddingSubPrayerId] = useState<string | null>(null);
   const [newSubPrayerText, setNewSubPrayerText] = useState<string>('');
+  const prevIsOpenRef = useRef<boolean>(false);
 
   // Lock background body scroll to eliminate outer page scrollbars
   useEffect(() => {
@@ -196,9 +200,9 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
     };
   }, [isOpen]);
 
-  // Requirement: Every new prayer session restarts at Adoration with a fixed, stable plan for that run
+  // Only initialize on initial modal open transition. Adding/editing sub-prayers will NOT reset stage/topic!
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpenRef.current) {
       setActivePlan(sessionPlan);
       setCurrentStageIndex(0);
       setCurrentTopicIndex(0);
@@ -206,7 +210,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
       setAddingSubPrayerId(null);
       setNewSubPrayerText('');
     }
-  }, [isOpen, sessionPlan]);
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -368,6 +373,49 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
     setAddingSubPrayerId(null);
     setNewSubPrayerText('');
+  };
+
+  // Handle archiving prayer card or sub-prayer
+  const handleArchive = (card: PrayerCard) => {
+    if (!activeItem || !onArchiveCard) return;
+    onArchiveCard(activeItem.subject.name, card);
+
+    const key = card.stackGroup || card.threadId;
+    const isRoot = Boolean(
+      groupSessionCards(activeItem.cards, activeItem.subject?.cards || []).find(
+        g => g.rootCard?.createdDate === card.createdDate && g.rootTitle
+      )
+    );
+
+    let updatedActiveCards: PrayerCard[];
+    let updatedSubjectCards: PrayerCard[];
+
+    if (isRoot && key) {
+      // Root card archived -> remove all cards in this thread from the active session
+      updatedActiveCards = activeItem.cards.filter(c => (c.stackGroup || c.threadId) !== key && c.createdDate !== card.createdDate);
+      updatedSubjectCards = activeItem.subject.cards.filter(c => (c.stackGroup || c.threadId) !== key && c.createdDate !== card.createdDate);
+    } else {
+      // Single sub-prayer or standalone card archived
+      updatedActiveCards = activeItem.cards.filter(c => c.createdDate !== card.createdDate);
+      updatedSubjectCards = activeItem.subject.cards.filter(c => c.createdDate !== card.createdDate);
+    }
+
+    const updatedItem: ActiveSessionItem = {
+      ...activeItem,
+      cards: updatedActiveCards,
+      subject: {
+        ...activeItem.subject,
+        cards: updatedSubjectCards
+      }
+    };
+
+    const updatedStageTopics = [...stageTopics];
+    updatedStageTopics[currentTopicIndex] = updatedItem;
+
+    setActivePlan({
+      ...activePlan,
+      [currentStage]: updatedStageTopics
+    });
   };
 
   return (
@@ -568,8 +616,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                               />
                             </div>
 
-                            {/* Option to add sub prayer that appears on hover on the right side */}
-                            <div className="shrink-0 flex items-center">
+                            {/* Right side actions on hover: + Sub-prayer on top, Archive below */}
+                            <div className="shrink-0 flex flex-col items-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -578,10 +626,23 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                   setNewSubPrayerText('');
                                 }}
                                 title="Add sub-prayer for this person"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
+                                className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
                               >
                                 <Plus className="w-3 h-3 text-amber-400" />
                                 <span>Sub-prayer</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (group.rootCard) handleArchive(group.rootCard);
+                                }}
+                                title="Archive this prayer"
+                                className="px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95"
+                              >
+                                <Archive className="w-3 h-3 text-neutral-400" />
+                                <span>Archive</span>
                               </button>
                             </div>
                           </div>
@@ -630,23 +691,33 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                             </div>
                           )}
 
-                          {/* Sub-portion (Updates under this Topic/Person) - Clean dark styling */}
+                          {/* Sub-portion (Updates under this Topic/Person) - Clean text with no update# or date */}
                           <div className="space-y-2 pt-1 border-t border-neutral-800/60">
                             {group.cards.map((card, cIdx) => (
                               <div
                                 key={card.createdDate + cIdx}
-                                className="p-2.5 sm:p-3 rounded-lg bg-neutral-900/60 border border-neutral-800/70 space-y-1 transition-colors hover:border-neutral-700/80"
+                                className="group/sub p-2.5 sm:p-3 rounded-lg bg-neutral-900/60 border border-neutral-800/70 flex items-start justify-between gap-3 transition-colors hover:border-neutral-700/80"
                               >
-                                <div className="text-[10px] text-neutral-500 font-mono">
-                                  Update #{cIdx + 1} • {new Date(card.createdDate).toLocaleDateString()}
-                                </div>
-                                <div className="text-sm sm:text-base font-serif text-neutral-200 leading-relaxed font-normal">
+                                <div className="flex-1 min-w-0 text-sm sm:text-base font-serif text-neutral-200 leading-relaxed font-normal">
                                   <InlineEditableText
                                     value={card.text}
                                     onSave={(newVal) => handleCardTextEdited(card, newVal)}
                                     isMarkdown={card.isMarkdown}
                                   />
                                 </div>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleArchive(card);
+                                  }}
+                                  title="Archive this sub-prayer"
+                                  className="opacity-0 group-hover/sub:opacity-100 transition-opacity duration-200 px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95 shrink-0"
+                                >
+                                  <Archive className="w-3 h-3 text-neutral-400" />
+                                  <span>Archive</span>
+                                </button>
                               </div>
                             ))}
                           </div>
@@ -674,8 +745,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                               />
                             </div>
 
-                            {/* Option to add sub prayer that appears on hover on the right side */}
-                            <div className="shrink-0 flex items-center">
+                            {/* Right side actions on hover: + Sub-prayer on top, Archive below */}
+                            <div className="shrink-0 flex flex-col items-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -684,10 +755,23 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                   setNewSubPrayerText('');
                                 }}
                                 title="Add sub-prayer for this person"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
+                                className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
                               >
                                 <Plus className="w-3 h-3 text-amber-400" />
                                 <span>Sub-prayer</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleArchive(card);
+                                }}
+                                title="Archive this prayer"
+                                className="px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95"
+                              >
+                                <Archive className="w-3 h-3 text-neutral-400" />
+                                <span>Archive</span>
                               </button>
                             </div>
                           </div>

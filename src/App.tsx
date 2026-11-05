@@ -1041,6 +1041,7 @@ export function App() {
         onTopicPrayed={handleTopicPrayed}
         onEditCardText={handleEditCardText}
         onAddCardUpdate={handleAddCardUpdate}
+        onArchiveCard={handleArchiveRequest}
       />
 
       {/* Preferences & Storage Modal */}

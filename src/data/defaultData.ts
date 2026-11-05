@@ -1,4 +1,4 @@
 import { PrayerData } from '../types/prayer';
-import backupJson from '../../Backup_03-11-26_18-56.json';
+import starterJson from './starterPrayerData.json';
 
-export const DEFAULT_PRAYER_DATA: PrayerData = backupJson as PrayerData;
+export const DEFAULT_PRAYER_DATA: PrayerData = (starterJson as unknown) as PrayerData;

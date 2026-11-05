@@ -60,17 +60,6 @@ export async function loadPrayerData(filePathOverride?: string): Promise<{ data:
         const fileContent = await readTextFile(targetPath);
         const parsed = JSON.parse(fileContent) as PrayerData;
 
-        // Auto-sync Friends list if loaded data has outdated placeholder
-        const supp = parsed.Categories?.find(c => c.name.toLowerCase() === 'supplication');
-        const friends = supp?.subjects?.find(s => s.name.trim().toLowerCase() === 'friends');
-        if (friends && !friends.cards.some(c => c.text === 'Luke Larco')) {
-          const defaultSupp = DEFAULT_PRAYER_DATA.Categories.find(c => c.name.toLowerCase() === 'supplication');
-          const defaultFriends = defaultSupp?.subjects?.find(s => s.name.trim().toLowerCase() === 'friends');
-          if (defaultFriends && defaultFriends.cards.length > 0) {
-            friends.cards = defaultFriends.cards;
-          }
-        }
-
         return { data: parsed, filePath: targetPath, isTauri: true };
       }
     } catch (err) {
@@ -83,18 +72,6 @@ export async function loadPrayerData(filePathOverride?: string): Promise<{ data:
     const webSaved = localStorage.getItem(WEB_DATA_STORAGE_KEY);
     if (webSaved) {
       const parsed = JSON.parse(webSaved) as PrayerData;
-
-      // Auto-sync Friends list if localStorage has outdated placeholder
-      const supp = parsed.Categories?.find(c => c.name.toLowerCase() === 'supplication');
-      const friends = supp?.subjects?.find(s => s.name.trim().toLowerCase() === 'friends');
-      if (friends && !friends.cards.some(c => c.text === 'Luke Larco')) {
-        const defaultSupp = DEFAULT_PRAYER_DATA.Categories.find(c => c.name.toLowerCase() === 'supplication');
-        const defaultFriends = defaultSupp?.subjects?.find(s => s.name.trim().toLowerCase() === 'friends');
-        if (defaultFriends && defaultFriends.cards.length > 0) {
-          friends.cards = defaultFriends.cards;
-          localStorage.setItem(WEB_DATA_STORAGE_KEY, JSON.stringify(parsed, null, 2));
-        }
-      }
 
       return { data: parsed, filePath: targetPath, isTauri: false };
     }

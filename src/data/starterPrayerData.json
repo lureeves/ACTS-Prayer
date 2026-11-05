@@ -1,0 +1,953 @@
+{
+  "Categories": [
+    {
+      "name": "Adoration",
+      "ordering": 4,
+      "createdDate": "2026-07-08T13:36:48.991695Z",
+      "manualSessionLimit": 1,
+      "visible": true,
+      "pendingApproval": false,
+      "subjects": [
+        {
+          "name": "Jealous",
+          "ordering": 12,
+          "createdDate": "2026-08-10T14:15:55.456696Z",
+          "lastPrayed": "2026-10-04T13:45:17.443364Z",
+          "schedulingTimestamp": "2026-10-04T06:45:17.439674Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 4,
+          "cards": [
+            {
+              "text": "Nahum 1:2\n\nThe LORD is a jealous and avenging God; the LORD is avenging and wrathful; the LORD takes vengeance on his adversaries and keeps wrath for his enemies.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:57:19.442692Z",
+              "stackGroup": "d883745e-d0b3-4801-9752-c100cb1f1e2f",
+              "threadId": "5f925d8e-9fe6-4705-9460-c18fbc8fc559",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-04T06:45:17.442097Z",
+              "seenCount": 2,
+              "isMarkdown": false
+            },
+            {
+              "text": "God intensely and righteously protects his own honor and the exclusive worship of his people, desiring their ultimate good and supreme devotion.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:56:39.693874Z",
+              "stackGroup": "69df53e4-5894-4673-8f6c-371001fcf741",
+              "threadId": "bb1db7d2-4ba4-4af4-b37f-9e154d8fbf08",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-04T06:45:17.443280Z",
+              "seenCount": 2,
+              "isMarkdown": false
+            },
+            {
+              "text": "Exodus 34:14\n\n(for you shall worship no other god, for the LORD, whose name is Jealous, is a jealous God),",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:57:05.920851Z",
+              "stackGroup": "81a2ff0d-fc7f-4b5b-ab89-8dca0897a1a3",
+              "threadId": "5ce8e2bb-30ab-4245-8fba-df1e2925d5f9",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-04T06:45:17.442757Z",
+              "seenCount": 2,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Omnipotent",
+          "ordering": 2,
+          "createdDate": "2026-07-08T13:45:25.355811Z",
+          "lastPrayed": "2026-10-10T14:01:50.722466Z",
+          "schedulingTimestamp": "2026-10-10T06:58:04.086527Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 6,
+          "cards": [
+            {
+              "text": "Job 42:2\n\nI know that you can do all things, and that no purpose of yours\ncan be thwarted. ",
+              "ordering": 0,
+              "createdDate": "2026-08-26T13:02:45.295321Z",
+              "stackGroup": "dc496b27-a23e-44de-9449-73034be5444c",
+              "threadId": "83138e8b-edb3-4c6d-92e2-48697daf1aba",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-10T07:01:50.721687Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "God possesses all power, having the ability to do anything that\ndoes not conflict with his own character.",
+              "ordering": 0,
+              "createdDate": "2026-08-26T13:02:58.610274Z",
+              "stackGroup": "9928ec57-35a2-4b9e-89dc-544b061e9eee",
+              "threadId": "d14a49e3-66c4-4cc2-8ddf-9cb713d26d79",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-10T07:01:50.720922Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "Jeremiah 32:17\n\n17 Ah, Lord God! It is you who have made the heavens and the earth by your great power and by your outstretched arm! Nothing is too hard for you.",
+              "ordering": 0,
+              "createdDate": "2026-07-08T13:46:27.816374Z",
+              "stackGroup": "7358602a-3b86-497c-8b7a-4278fb45f9b9",
+              "threadId": "37cec96e-df6c-4d57-b0e6-9f4c41dc2254",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-10T07:01:50.722311Z",
+              "seenCount": 6,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Omniscient ",
+          "ordering": 4,
+          "createdDate": "2026-08-03T04:45:36.337658Z",
+          "lastPrayed": "2026-10-14T12:54:44.701844Z",
+          "schedulingTimestamp": "2026-10-14T05:54:44.673327Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 5,
+          "cards": [
+            {
+              "text": "Romans 11:33-34\n\nOh, the depth of the riches and wisdom and knowledge of God!\nHow unsearchable are his judgments and how inscrutable his\nways! “For who has known the mind of the Lord, or who has been\nhis counselor?”",
+              "ordering": 0,
+              "createdDate": "2026-08-27T13:01:59.978571Z",
+              "stackGroup": "b0fc755d-c4f2-4c9b-8db9-856b3aafd2db",
+              "threadId": "c34accec-b92c-4b73-a7a8-4f08f6346c09",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-14T05:54:44.699097Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            },
+            {
+              "text": "Psalm 139:1-4\n\nO LORD, you have searched me and known me! You know when I\nsit down and when I rise up; you discern my thoughts from afar.\nYou search out my path and my lying down and are acquainted\nwith all my ways. Even before a word is on my tongue, behold, O\nLORD, you know it altogether.",
+              "ordering": 0,
+              "createdDate": "2026-08-27T13:01:27.964701Z",
+              "stackGroup": "1c2e44cd-64c8-415c-b4a8-4296ff8ff508",
+              "threadId": "7ed291e5-5191-4b12-84a6-3ec7b36d10ed",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-14T05:54:44.700511Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            },
+            {
+              "text": "God possesses all knowledge, knowing all there is to know\nwhether actual or possible.",
+              "ordering": 0,
+              "createdDate": "2026-08-27T13:01:00.754751Z",
+              "stackGroup": "c603e922-e489-4259-8511-67edd25d9211",
+              "threadId": "6fca095a-06d1-4e60-9350-6be43dff9bb3",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-14T05:54:44.701531Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Patient",
+          "ordering": 13,
+          "createdDate": "2026-08-10T14:16:02.288423Z",
+          "lastPrayed": "2026-10-17T15:53:43.611584Z",
+          "schedulingTimestamp": "2026-10-17T08:53:43.585869Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 5,
+          "cards": [
+            {
+              "text": "2 Peter 3:9\n\nThe Lord is not slow to fulfill his promise as some count slowness,\nbut is patient toward you, not wishing that any should perish, but\nthat all should reach repentance.",
+              "ordering": 0,
+              "createdDate": "2026-08-30T17:21:45.769480Z",
+              "stackGroup": "5863c468-8016-4bd1-bfca-52f02af1ef0b",
+              "threadId": "3dc8700c-cf21-40ed-a263-26880d2f5ea9",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-17T08:53:43.610527Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            },
+            {
+              "text": "God controls his will with perfect endurance in the face of pain or\nany other provocation.",
+              "ordering": 0,
+              "createdDate": "2026-08-30T17:19:18.753430Z",
+              "stackGroup": "290a9238-87a1-486d-a8d5-33e7d38b3423",
+              "threadId": "528dc33b-bb0f-4d07-9ba9-5ccc5b829c56",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-17T08:53:43.611503Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            },
+            {
+              "text": "Pslam 86:15\n\nBut you, O Lord, are a God merciful and gracious, slow to anger\nand abouding in steadfast love and faithfulness.",
+              "ordering": 0,
+              "createdDate": "2026-08-30T17:22:01.955036Z",
+              "stackGroup": "2a2fb072-74cf-41e8-b9fc-fe5b6ad34802",
+              "threadId": "d7096d87-f717-4a0d-bbb3-be87cc6f3ff3",
+              "archived": false,
+              "stackOrder": -3,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-17T08:53:43.609803Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            },
+            {
+              "text": "1 Timothy 1:16\n\nBut I received mercy for this reason, that in me, as the foremost,\nJesus Christ might display his perfect patience as an example to\nthose who were to believe in him for eternal life.",
+              "ordering": 0,
+              "createdDate": "2026-08-30T17:19:40.336696Z",
+              "stackGroup": "5b567a69-12eb-4620-b8f2-c44e1ee48fd5",
+              "threadId": "e28cad90-321e-4bed-a2b4-ef35b7b3ad60",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-17T08:53:43.611007Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Creator",
+          "ordering": 7,
+          "createdDate": "2026-08-03T04:46:41.363553Z",
+          "lastPrayed": "2026-10-11T14:48:42.297212Z",
+          "schedulingTimestamp": "2026-10-11T07:48:42.288851Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 5,
+          "cards": [
+            {
+              "text": "Colossians 1:16\n\nFor by him all things were created, in heaven and on earth, visible and invisible, whether thrones or dominions or rulers or authorities—all things were created through him and for him.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:56:03.211818Z",
+              "stackGroup": "7b90a364-6aa8-47d6-8125-b8e68c3f26e6",
+              "threadId": "28aadf75-b96f-42c5-b470-e82b801ebac3",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-11T07:48:42.295154Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "Genesis 1:1\n\nIn the beginning, God created the heavens and the earth.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:55:42.610606Z",
+              "stackGroup": "6c276da9-4a22-4691-bed2-497e41b16df0",
+              "threadId": "9ec6b48d-d55a-49c9-b7e4-7c33371c1d2e",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-11T07:48:42.296001Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "God is the uncreated maker of all things, speaking the universe into existence from nothing and sustaining it by his infinite power.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:55:25.647947Z",
+              "stackGroup": "02eb4aae-1cab-4934-b28b-73007533353c",
+              "threadId": "44e9a079-7193-421f-961c-008d23b81b10",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-11T07:48:42.296960Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Omnipresent",
+          "ordering": 1,
+          "createdDate": "2026-07-08T13:38:08.432815Z",
+          "lastPrayed": "2026-10-09T13:19:55.708068Z",
+          "schedulingTimestamp": "2026-10-09T06:19:55.681373Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 4,
+          "cards": [
+            {
+              "text": "God is fully present everywhere at all times. He is not bound by physical space or limitations, meaning his entire being is present in every location throughout the universe simultaneously.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T13:00:15.341775Z",
+              "stackGroup": "8e0a4ffd-3f70-4b9f-b13d-3474e4c890e9",
+              "threadId": "bac25e67-3315-4b2d-9094-a4cfada580bc",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-09T06:19:55.706882Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "Pslam 33:13-14 \n\n13 The Lord looks down from heaven;he sees all the children of man;\n14 from where he sits enthroned he looks outon all the inhabitants of the earth,",
+              "ordering": 0,
+              "createdDate": "2026-07-08T13:44:41.272430Z",
+              "stackGroup": "aa3e5706-f0e2-4d4b-a9ae-872bc4315ccd",
+              "threadId": "6011ed11-27a5-404c-9d7a-f02250fd0245",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-09T06:19:55.707379Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            },
+            {
+              "text": "Psalm 139:7-8\n\nWhere shall I go from your Spirit? Or where shall I flee from your presence? If I ascend to heaven, you are there! If I make my bed in Sheol, you are there!",
+              "ordering": 0,
+              "createdDate": "2026-09-09T13:00:52.903564Z",
+              "stackGroup": "7826c1b8-9ba2-469e-b95d-fb0da894c53f",
+              "threadId": "ec02fbe6-fa7d-4b1c-91f4-69c517d45c61",
+              "archived": false,
+              "stackOrder": -3,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-09T06:19:55.705953Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "Matthew 10:29 \n\nAre not two sparrows sold for a penny? And not one of them will fall to the ground apart from your Father.",
+              "ordering": 0,
+              "createdDate": "2026-07-08T13:41:40.790160Z",
+              "stackGroup": "11082439-6b96-4558-b579-97feb50b4db8",
+              "threadId": "93a60765-1349-470d-b793-6d0b59155828",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-09T06:19:55.707989Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Sovereign",
+          "ordering": 3,
+          "createdDate": "2026-08-03T04:45:16.739475Z",
+          "lastPrayed": "2026-10-16T13:15:00.822800Z",
+          "schedulingTimestamp": "2026-10-16T06:15:00.794692Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 5,
+          "cards": [
+            {
+              "text": "Isaiah 14:24\n\nThe LORD of hosts has sworn, “As I have planned, so it shall be,\nand as I have purposed, so it shall stand.”",
+              "ordering": 0,
+              "createdDate": "2026-08-28T12:55:50.789670Z",
+              "stackGroup": "53db490f-93ab-488c-a41a-2a546ee6a6f0",
+              "threadId": "e9f2b579-9ae9-4edf-b72e-7595b9133dab",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-16T06:15:00.821444Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            },
+            {
+              "text": "God retains all rights and exercises supreme and ultimate\nauthority over everyone and everything.",
+              "ordering": 0,
+              "createdDate": "2026-08-28T12:55:13.827709Z",
+              "stackGroup": "9c03bfd2-7907-4238-aac3-0689beb61f37",
+              "threadId": "e38ccd0a-c5cb-49e3-82a2-725d082a7414",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-16T06:15:00.822708Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            },
+            {
+              "text": "Psalm 103:19\n\nThe LORD has established his throne in the heavens, and his\nkingdom rules over all.",
+              "ordering": 0,
+              "createdDate": "2026-08-28T12:55:28.536688Z",
+              "stackGroup": "ff034459-f762-41fc-b49b-569a12669ae0",
+              "threadId": "531ca75e-263a-4d8f-8f6b-7c6d50928449",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-16T06:15:00.822219Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Faithful",
+          "ordering": 11,
+          "createdDate": "2026-08-10T14:15:46.834020Z",
+          "lastPrayed": "2026-10-05T13:10:19.502988Z",
+          "schedulingTimestamp": "2026-10-05T06:07:37.044162Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 4,
+          "cards": [
+            {
+              "text": "Lamentations 3:22-23\n\nThe steadfast love of the LORD never ceases; his mercies never\ncome to an end; they are new every morning; great is your\nfaithfulness.",
+              "ordering": 0,
+              "createdDate": "2026-08-26T13:04:03.328328Z",
+              "stackGroup": "eb0acedf-79c9-489b-8dbc-cc015aa6ce57",
+              "threadId": "b4a9825e-fb25-4ffc-b2a9-5033514a444b",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-05T06:10:19.502184Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "God is perfectly reliable, without any deviation in his response to what he has promised.",
+              "ordering": 0,
+              "createdDate": "2026-08-26T13:04:22.827092Z",
+              "stackGroup": "1ef13266-0d03-4322-9bea-b04b14291397",
+              "threadId": "0417504e-02eb-42e4-9e08-4399a872d990",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-05T06:10:19.501382Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "1 Thessalonians 5:24\n\nHe who calls you is faithful; he will surely do it.",
+              "ordering": 0,
+              "createdDate": "2026-08-26T13:03:41.343470Z",
+              "stackGroup": "777e3aaf-eec0-4d91-be8d-9d4ab28f95b5",
+              "threadId": "b2385507-34bf-4647-846c-6bb7167c9196",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-05T06:10:19.502882Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Immutable",
+          "ordering": 6,
+          "createdDate": "2026-08-03T04:46:02.372542Z",
+          "lastPrayed": "2026-10-12T13:20:28.283689Z",
+          "schedulingTimestamp": "2026-10-12T06:20:28.255285Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 5,
+          "cards": [
+            {
+              "text": "God is unchanging in his being, perfections, purposes, and promises.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:54:22.221184Z",
+              "stackGroup": "6e994c9b-6a76-4af2-ba58-af8b81c0cb38",
+              "threadId": "44372bb2-3ae7-4bb4-9389-7cbe26059138",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-12T06:20:28.283598Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "Malachi 3:6\n\nFor I the LORD do not change; therefore you, O children of Jacob, are not consumed.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:54:49.809635Z",
+              "stackGroup": "517bab7b-592b-48c9-a002-d60a15699800",
+              "threadId": "3753dea1-5ebf-4cf1-ade2-c7286f29812f",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-12T06:20:28.282963Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "James 1:17\n\nEvery good gift and every perfect gift is from above, coming down from the Father of lights, with whom there is no variation or shadow due to change.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:55:07.649497Z",
+              "stackGroup": "47e13bea-763d-4e32-a5b3-ac106aca3bc6",
+              "threadId": "d738c7f3-b8b7-4fc6-a82f-e9276fad007d",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-12T06:20:28.281307Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Eternal",
+          "ordering": 5,
+          "createdDate": "2026-08-03T04:45:48.094973Z",
+          "lastPrayed": "2026-10-13T12:53:44.163181Z",
+          "schedulingTimestamp": "2026-10-13T05:53:44.126591Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 5,
+          "cards": [
+            {
+              "text": "Revelation 1:8\n\nI am the Alpha and the Omega,” says the Lord God, “who is and who was and who is to come, the Almighty.",
+              "ordering": 0,
+              "createdDate": "2026-08-26T13:08:32.852108Z",
+              "stackGroup": "22247d00-3767-4654-873b-d4611c23aa49",
+              "threadId": "28b62c40-de29-43c7-9115-1725815e01dc",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-13T05:53:44.162346Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            },
+            {
+              "text": "Psalm 90:2\n\nBefore the mountains were brought forth, or ever you had formed the earth and the world, from everlasting to everlasting you are God.",
+              "ordering": 0,
+              "createdDate": "2026-08-26T13:06:38.263585Z",
+              "stackGroup": "eac5ab30-e477-4e85-9658-3e2172c2147b",
+              "threadId": "e10ea7c3-4f5a-4011-ba04-4b3fa2c7f236",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-13T05:53:44.163004Z",
+              "seenCount": 4,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Love",
+          "ordering": 10,
+          "createdDate": "2026-08-10T14:15:33.787891Z",
+          "lastPrayed": "2026-10-06T12:53:18.451769Z",
+          "schedulingTimestamp": "2026-10-06T05:53:18.427464Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 4,
+          "cards": [
+            {
+              "text": "1 Chronicles 16:34\n\nOh give thanks to the LORD, for he is good; for his steadfast love\nendures forever!",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:50:27.865809Z",
+              "stackGroup": "c96d72c9-9ce4-447d-bda5-1c191ce9ad6d",
+              "threadId": "50cce72d-05ee-4604-9b5d-fbd74fc4826e",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-06T05:53:18.450464Z",
+              "seenCount": 2,
+              "isMarkdown": false
+            },
+            {
+              "text": "God freely and perfectly acts for the good and well-being of\nothers. God’s love is gracious and merciful—not only giving favor\nthat is unearned, but also withholding punishment that is due.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:49:54.399674Z",
+              "stackGroup": "5e8d581f-b906-4e62-8159-b9f96766d0d4",
+              "threadId": "5f63056b-1a8a-4181-9497-03dad302ac78",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-06T05:53:18.451669Z",
+              "seenCount": 2,
+              "isMarkdown": false
+            },
+            {
+              "text": "Romans 8:38-39\n\nFor I am sure that neither death nor life, nor angels nor rulers, nor\nthings present nor things to come, nor any powers, nor height nor\ndepth, nor anything else in all creation, will be able to separate us\nfrom the love of God in Christ Jesus our Lord.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:50:10.612212Z",
+              "stackGroup": "120e930f-9ce8-4bca-88bc-9e1a920fa686",
+              "threadId": "ed090984-4150-4e88-8f40-9bd700370cc0",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-06T05:53:18.451153Z",
+              "seenCount": 2,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Just",
+          "ordering": 9,
+          "createdDate": "2026-08-10T14:15:26.416637Z",
+          "lastPrayed": "2026-10-07T12:58:50.501465Z",
+          "schedulingTimestamp": "2026-10-07T05:58:50.495344Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 4,
+          "cards": [
+            {
+              "text": "Psalm 9:7\n\n7  But the Lord sits enthroned forever;\nhe has established his throne for justice,",
+              "ordering": 0,
+              "createdDate": "2026-09-05T13:59:27.276066Z",
+              "stackGroup": "71bf034d-4394-49a7-859a-490e279f5bf4",
+              "threadId": "56e03b35-8284-45d6-aac4-c0dea49e363e",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-07T05:58:50.500530Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "Deuteronomy 32:4  \n\n4 “The Rock, his work is perfect,\nfor all his ways are justice.\nA God of faithfulness and without iniquity,\njust and upright is he.",
+              "ordering": 0,
+              "createdDate": "2026-09-05T13:58:50.661136Z",
+              "stackGroup": "3c87f91b-d1f7-4053-8c63-1bb7c99d0c9f",
+              "threadId": "db570c59-0a1b-44ba-8554-49941f5be39a",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-07T05:58:50.501303Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "God is perfectly righteous in all his ways, always acting in accordance with what is right and ensuring that every wrong is fairly and rightfully judged.",
+              "ordering": 0,
+              "createdDate": "2026-09-09T12:56:21.719282Z",
+              "stackGroup": "75bef8bb-fe1c-49c1-943b-edbb0186db65",
+              "threadId": "088d409a-25fe-4652-958c-26bb345464a7",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-07T05:58:50.499324Z",
+              "seenCount": 2,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Holy",
+          "ordering": 8,
+          "createdDate": "2026-08-10T14:15:20.515917Z",
+          "lastPrayed": "2026-10-08T13:05:36.130320Z",
+          "schedulingTimestamp": "2026-10-08T06:05:36.104491Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 4,
+          "cards": [
+            {
+              "text": "God is morally perfect, without any defect or error in his actions,\nattributes and behavior.",
+              "ordering": 0,
+              "createdDate": "2026-08-26T13:01:52.829844Z",
+              "stackGroup": "cf6a4251-348a-4e4a-9354-ea745c04a5fa",
+              "threadId": "309a718b-bed8-433c-9648-14c8d34b8fd3",
+              "archived": false,
+              "stackOrder": -2,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-08T06:05:36.108392Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "1 Samuel 2:2\n\nThere is none holy like the LORD; there is no one besides you;\nthere is no rock like our God.",
+              "ordering": 0,
+              "createdDate": "2026-08-26T13:01:17.561239Z",
+              "stackGroup": "643fba60-01d5-4834-9ef9-37345d92a7fe",
+              "threadId": "68a07143-7df7-4e4c-83da-a76fb8a3e4ae",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-08T06:05:36.130194Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            },
+            {
+              "text": "Psalm 22:3\n\nYet you are holy, enthroned on the praises of Israel.",
+              "ordering": 0,
+              "createdDate": "2026-08-26T13:01:33.778022Z",
+              "stackGroup": "1754e242-e1d4-4647-ad4b-819b86c3b0da",
+              "threadId": "f6d0f120-9979-46a3-aec1-c6a3190dff23",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-08T06:05:36.126460Z",
+              "seenCount": 3,
+              "isMarkdown": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Confession",
+      "ordering": 5,
+      "createdDate": "2026-07-08T13:36:54.409872Z",
+      "visible": true,
+      "pendingApproval": false,
+      "subjects": [
+        {
+          "name": "Confess",
+          "ordering": 3,
+          "createdDate": "2026-08-27T13:04:01.716670Z",
+          "lastPrayed": "2026-10-16T13:18:36.475177Z",
+          "schedulingTimestamp": "2026-10-16T06:15:00.794692Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 20,
+          "cards": [
+            {
+              "text": "Psalm 51:3-4, 7\n\nLord, I know my transgressions, and my sin is ever before me.\nAgainst you, you only, have I sinned and done what is evil in your\nsight, so that you may be justified in your words and blameless in\nyour judgment… Purge me with hyssop, and I shall be clean; wash\nme, and I shall be whiter than snow. ",
+              "ordering": 0,
+              "createdDate": "2026-08-27T13:04:21.065577Z",
+              "stackGroup": "db897b90-acaf-4cab-8d5b-ede831a840f7",
+              "threadId": "efcbce01-bd2a-46e9-9848-0b54b02ec3d1",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-16T06:18:36.474822Z",
+              "seenCount": 20,
+              "isMarkdown": false
+            }
+          ]
+        },
+        {
+          "name": "Confess",
+          "ordering": 2,
+          "createdDate": "2026-07-08T13:49:29.079571Z",
+          "lastPrayed": "2026-10-17T15:58:08.209399Z",
+          "schedulingTimestamp": "2026-10-17T08:53:43.585869Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 29,
+          "cards": [
+            {
+              "text": "1 Samuel 2:2\n\nThere is none holy like the LORD; there is no one besides you;\nthere is no rock like our God.",
+              "ordering": 0,
+              "createdDate": "2026-08-27T13:03:33.143547Z",
+              "stackGroup": "3393357b-03ea-4424-85ac-4054a820cef4",
+              "threadId": "1cb3e2ee-f18a-40ee-ad5d-3cdf2465cfce",
+              "archived": false,
+              "stackOrder": -1,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-17T08:58:08.208259Z",
+              "seenCount": 20,
+              "isMarkdown": false
+            },
+            {
+              "text": "1 John 1:9 \n\nIf we confess our sins, he is faithful and just to forgive us our sins and to cleanse us from all unrighteousness.",
+              "ordering": 0,
+              "createdDate": "2026-07-08T13:49:48.531139Z",
+              "stackGroup": "ce746988-3302-4237-b0a7-d1182c758fbd",
+              "threadId": "03a7f542-c662-4e18-ace5-dc79fcc8b8e7",
+              "archived": false,
+              "stackOrder": 0,
+              "eventReminder": false,
+              "lastPrayed": "2026-10-17T08:58:08.209173Z",
+              "seenCount": 29,
+              "isMarkdown": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Thanksgiving",
+      "ordering": 3,
+      "createdDate": "2026-11-05T06:43:42.305Z",
+      "manualSessionLimit": 2,
+      "visible": true,
+      "pendingApproval": false,
+      "subjects": [
+        {
+          "name": "Answered Prayers",
+          "ordering": 1,
+          "createdDate": "2026-11-05T06:43:42.306Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 0,
+          "cards": [
+            {
+              "text": "1 Thessalonians 5:16-18\n\nRejoice always, pray continually, give thanks in all circumstances; for this is God's will for you in Christ Jesus.",
+              "ordering": 0,
+              "createdDate": "2026-11-05T06:43:42.306Z",
+              "archived": false,
+              "seenCount": 0,
+              "isMarkdown": true
+            }
+          ]
+        },
+        {
+          "name": "Daily Blessings & Grace",
+          "ordering": 2,
+          "createdDate": "2026-11-05T06:43:42.306Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 0,
+          "cards": [
+            {
+              "text": "Psalm 103:1-2\n\nPraise the LORD, my soul; all my inmost being, praise his holy name. Praise the LORD, my soul, and forget not all his benefits.",
+              "ordering": 0,
+              "createdDate": "2026-11-05T06:43:42.306Z",
+              "archived": false,
+              "seenCount": 0,
+              "isMarkdown": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Supplication",
+      "ordering": 4,
+      "createdDate": "2026-11-05T06:43:42.306Z",
+      "manualSessionLimit": 3,
+      "visible": true,
+      "pendingApproval": false,
+      "subjects": [
+        {
+          "name": "Family",
+          "ordering": 1,
+          "createdDate": "2026-11-05T06:43:42.306Z",
+          "priority": "high",
+          "priorityLevel": 3,
+          "schedulingMode": 0,
+          "dayOfTheWeekMask": 62,
+          "seenCount": 0,
+          "cards": [
+            {
+              "text": "Spiritual Growth & Protection\n\nPray for our family to grow in love for Christ, walk in wisdom, and reflect God's grace each day.",
+              "ordering": 0,
+              "createdDate": "2026-11-05T06:43:42.306Z",
+              "archived": false,
+              "seenCount": 0,
+              "isMarkdown": true
+            }
+          ]
+        },
+        {
+          "name": "Friends & Community",
+          "ordering": 2,
+          "createdDate": "2026-11-05T06:43:42.306Z",
+          "priority": "medium",
+          "priorityLevel": 2,
+          "schedulingMode": 0,
+          "dayOfTheWeekMask": 127,
+          "seenCount": 0,
+          "cards": [
+            {
+              "text": "Godly Friendships\n\nPray for our friends to know Christ deeply, encourage one another, and be strengthened in faith.",
+              "ordering": 0,
+              "createdDate": "2026-11-05T06:43:42.306Z",
+              "archived": false,
+              "seenCount": 0,
+              "isMarkdown": true
+            }
+          ]
+        },
+        {
+          "name": "Church & Ministries",
+          "ordering": 3,
+          "createdDate": "2026-11-05T06:43:42.306Z",
+          "priority": "medium",
+          "priorityLevel": 2,
+          "schedulingMode": 0,
+          "dayOfTheWeekMask": 33,
+          "seenCount": 0,
+          "cards": [
+            {
+              "text": "Pastors & Leaders\n\nPray for pastors and ministry leaders to preach the Word with boldness, humility, and fidelity.",
+              "ordering": 0,
+              "createdDate": "2026-11-05T06:43:42.306Z",
+              "archived": false,
+              "seenCount": 0,
+              "isMarkdown": true
+            }
+          ]
+        },
+        {
+          "name": "Work & Daily Walk",
+          "ordering": 4,
+          "createdDate": "2026-11-05T06:43:42.306Z",
+          "priority": "low",
+          "priorityLevel": 1,
+          "schedulingMode": 0,
+          "dayOfTheWeekMask": 62,
+          "seenCount": 0,
+          "cards": [
+            {
+              "text": "Colossians 3:23-24\n\nWhatever you do, work at it with all your heart, as working for the Lord, not for human masters.",
+              "ordering": 0,
+              "createdDate": "2026-11-05T06:43:42.306Z",
+              "archived": false,
+              "seenCount": 0,
+              "isMarkdown": true
+            }
+          ]
+        },
+        {
+          "name": "Missions & The World",
+          "ordering": 5,
+          "createdDate": "2026-11-05T06:43:42.306Z",
+          "priority": "low",
+          "priorityLevel": 1,
+          "schedulingMode": 0,
+          "dayOfTheWeekMask": 127,
+          "seenCount": 0,
+          "cards": [
+            {
+              "text": "Matthew 9:37-38\n\nThe harvest is plentiful but the workers are few. Ask the Lord of the harvest to send out workers into his harvest field.",
+              "ordering": 0,
+              "createdDate": "2026-11-05T06:43:42.306Z",
+              "archived": false,
+              "seenCount": 0,
+              "isMarkdown": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Archive",
+      "ordering": 5,
+      "createdDate": "2026-11-05T06:43:42.306Z",
+      "visible": true,
+      "pendingApproval": false,
+      "subjects": [
+        {
+          "name": "+++InboxSubject+++",
+          "ordering": 1,
+          "createdDate": "2026-11-05T06:43:42.306Z",
+          "priorityLevel": 0,
+          "schedulingMode": 0,
+          "seenCount": 0,
+          "isInbox": true,
+          "cards": []
+        }
+      ]
+    }
+  ],
+  "Metadata": {
+    "version": "1.0",
+    "created_at": "2026-11-05T06:43:42.306Z",
+    "export_date": "2026-11-05T06:43:42.306Z",
+    "card_count": 50,
+    "subject_count": 23,
+    "list_count": 5,
+    "settings": {
+      "sessionDurationMinutes": 15,
+      "autoStartTimer": true,
+      "filePath": "Backup_03-11-26_18-56.json",
+      "soundEnabled": true,
+      "supplicationTopicsLimit": 3,
+      "theme": "dark"
+    }
+  }
+}

@@ -7,3 +7,10 @@ dist
 *.log
 .env
 *.local
+
+# Personal Prayer JSON Backups & Private Data
+Backup_*.json
+my_prayer_data*.json
+*_private.json
+*prayer_backup*.json
+*.backup.json

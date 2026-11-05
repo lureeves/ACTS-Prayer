@@ -75,17 +75,6 @@ export function App() {
         });
       });
 
-      // Auto-sync Friends list if loaded data has outdated placeholder
-      const supp = data.Categories.find(c => c.name.toLowerCase() === 'supplication');
-      const friends = supp?.subjects.find(s => s.name.trim().toLowerCase() === 'friends');
-      if (friends && !friends.cards.some(c => c.text === 'Luke Larco')) {
-        const defaultSupp = DEFAULT_PRAYER_DATA.Categories.find(c => c.name.toLowerCase() === 'supplication');
-        const defaultFriends = defaultSupp?.subjects?.find(s => s.name.trim().toLowerCase() === 'friends');
-        if (defaultFriends && defaultFriends.cards.length > 0) {
-          friends.cards = defaultFriends.cards;
-          await savePrayerData(data, settings.filePath);
-        }
-      }
 
       const { rotation: updatedRotation, changed } = syncDailyRotation(
         data.Metadata.dailyRotation,
@@ -141,37 +130,6 @@ export function App() {
     const intervalId = window.setInterval(checkDayTransition, 20000);
     return () => clearInterval(intervalId);
   }, [prayerData, settings.supplicationTopicsLimit, persistState]);
-
-  // Reactive runtime sync for Friends list if active in-memory state has outdated placeholder
-  useEffect(() => {
-    if (!prayerData) return;
-    const supp = prayerData.Categories.find(c => c.name.toLowerCase() === 'supplication');
-    const friends = supp?.subjects.find(s => s.name.trim().toLowerCase() === 'friends');
-    if (friends && !friends.cards.some(c => c.text === 'Luke Larco')) {
-      const defaultSupp = DEFAULT_PRAYER_DATA.Categories.find(c => c.name.toLowerCase() === 'supplication');
-      const defaultFriends = defaultSupp?.subjects?.find(s => s.name.trim().toLowerCase() === 'friends');
-      if (defaultFriends && defaultFriends.cards.length > 0) {
-        const updatedCategories = prayerData.Categories.map(cat => {
-          if (cat.name.toLowerCase() === 'supplication') {
-            return {
-              ...cat,
-              subjects: cat.subjects.map(sub => {
-                if (sub.name.trim().toLowerCase() === 'friends') {
-                  return {
-                    ...sub,
-                    cards: defaultFriends.cards
-                  };
-                }
-                return sub;
-              })
-            };
-          }
-          return cat;
-        });
-        persistState({ ...prayerData, Categories: updatedCategories });
-      }
-    }
-  }, [prayerData, persistState]);
 
   // Register Global Hotkey (Cmd + Shift + P)
   useEffect(() => {

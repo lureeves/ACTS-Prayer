@@ -222,8 +222,6 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
     prevIsOpenRef.current = isOpen;
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   const currentStage: ACTSStage = ACTS_STAGES[currentStageIndex];
   const stageTopics = activePlan[currentStage] || [];
   const activeItem = stageTopics[currentTopicIndex];
@@ -674,6 +672,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
     });
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950 text-neutral-100 select-none overflow-hidden h-screen w-screen animate-fadeIn">
       {/* Top Bar - Centered Clock Over Top & Stage Pills (Never Cut Off in Half Screen) */}
@@ -757,7 +757,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
               Return to Overview
             </button>
           </div>
-        ) : stageTopics.length === 0 ? (
+        ) : stageTopics.length === 0 || !activeItem ? (
           <div className="text-center space-y-3 my-auto">
             <div className="p-3 bg-neutral-900 rounded-full w-12 h-12 flex items-center justify-center mx-auto text-neutral-500">
               {theme.icon}

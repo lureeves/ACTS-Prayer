@@ -9,7 +9,7 @@ export interface PrayerCard {
   userArchived?: boolean; // Explicitly archived by user action
   originalCategory?: string; // Category it was archived from (e.g. Supplication)
   originalSubject?: string; // Subject it was archived from (e.g. Wife's Family)
-  originalTopic?: string; // Topic/root card title it was part of (e.g. Dawn & Shannon)
+  originalTopic?: string; // Topic/root card title it was part of (e.g. Family Request)
   stackOrder?: number;
   eventReminder?: boolean;
   lastPrayed?: string;

@@ -649,6 +649,7 @@ export function App() {
               onUnarchiveCard={handleUnarchiveCard}
               onAddNewCard={(sub, txt) => handleAddNewCard(sub, txt)}
               onAddNewTopic={(topicName) => handleAddNewTopic(activeCategory.name, topicName)}
+              onUpdateSchedule={(subName, sched) => handleUpdateTopicSchedule(activeCategory.name, subName, sched)}
             />
           )
         ) : (

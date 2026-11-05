@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { PrayerCategory, PrayerSubject, PrayerCard } from '../types/prayer';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { BatchPrayersModal } from './BatchPrayersModal';
 
 interface CategoryCardsViewProps {
   category: PrayerCategory;
@@ -18,6 +19,15 @@ interface CategoryCardsViewProps {
   onUnarchiveCard?: (subjectName: string, card: PrayerCard) => void;
   onAddNewCard: (subjectName: string, text: string) => void;
   onAddNewTopic?: (topicName: string) => void;
+  onUpdateSchedule?: (
+    subjectName: string,
+    schedule: {
+      schedulingMode?: number;
+      sessionCardLimit?: number;
+      cardSelectionMode?: 'sequential' | 'random';
+      cardRotationOffset?: number;
+    }
+  ) => void;
 }
 
 export const CategoryCardsView: React.FC<CategoryCardsViewProps> = ({
@@ -25,9 +35,11 @@ export const CategoryCardsView: React.FC<CategoryCardsViewProps> = ({
   onArchiveCard,
   onUnarchiveCard,
   onAddNewCard,
-  onAddNewTopic
+  onAddNewTopic,
+  onUpdateSchedule
 }) => {
   const isArchiveCategory = category.name.toLowerCase() === 'archive';
+  const [batchingSubject, setBatchingSubject] = useState<PrayerSubject | null>(null);
 
   // Expand all subjects in Archive by default so users immediately see their archived items
   const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>(() => {
@@ -105,9 +117,34 @@ export const CategoryCardsView: React.FC<CategoryCardsViewProps> = ({
                 </div>
               </div>
 
-              <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-300">
-                {displayCards.length} {isArchiveCategory ? 'archived' : 'active'}
-              </span>
+              <div className="flex items-center gap-2">
+                {!isArchiveCategory && onUpdateSchedule && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setBatchingSubject(subject);
+                    }}
+                    className={`text-[10px] font-mono px-2.5 py-1 rounded-full border transition-all flex items-center gap-1.5 ${
+                      subject.sessionCardLimit && subject.sessionCardLimit > 0
+                        ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/25 shadow-sm font-medium'
+                        : 'bg-neutral-800 text-neutral-400 border-neutral-700/60 hover:text-neutral-200 hover:border-neutral-600'
+                    }`}
+                    title="Configure batch prayer limits (e.g. 5 at a time, sequential or random)"
+                  >
+                    <Layers className="w-3 h-3 text-indigo-400" />
+                    <span>
+                      {subject.sessionCardLimit && subject.sessionCardLimit > 0
+                        ? `Batch: ${subject.sessionCardLimit} (${subject.cardSelectionMode === 'random' ? 'Rand' : 'Seq'})`
+                        : 'Batch Prayers'}
+                    </span>
+                  </button>
+                )}
+
+                <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-300">
+                  {displayCards.length} {isArchiveCategory ? 'archived' : 'active'}
+                </span>
+              </div>
             </div>
 
             {/* Body */}
@@ -241,6 +278,21 @@ export const CategoryCardsView: React.FC<CategoryCardsViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Batch Prayers Modal */}
+      <BatchPrayersModal
+        isOpen={!!batchingSubject}
+        onClose={() => setBatchingSubject(null)}
+        subject={batchingSubject}
+        onSaveBatch={(name, config) => {
+          if (onUpdateSchedule) {
+            onUpdateSchedule(name, {
+              schedulingMode: batchingSubject?.schedulingMode ?? 0,
+              ...config
+            });
+          }
+        }}
+      />
     </div>
   );
 };

@@ -490,18 +490,18 @@ export const TopicScheduleModal: React.FC<TopicScheduleModalProps> = ({
             </div>
           </div>
 
-          {/* Card Batching & Limits: Cards per Session */}
+          {/* Batch Prayers (Cards Per Session) */}
           <div className="space-y-3 pt-4 border-t border-neutral-800/80">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-                    Cards Per Session
+                  <label className="text-xs font-semibold uppercase tracking-wider text-indigo-300">
+                    Batch Prayers
                   </label>
                 </div>
-                <p className="text-[11px] text-neutral-500">
-                  Limit how many cards/people to pray for each time this topic surfaces.
+                <p className="text-[11px] text-neutral-400">
+                  Choose how many cards or people you want to pray for at a time (default 5), and whether to cycle sequentially or randomly.
                 </p>
               </div>
               {totalUnitsCount > 0 && (
@@ -577,15 +577,29 @@ export const TopicScheduleModal: React.FC<TopicScheduleModalProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBatchLimit(prev => Math.max(1, prev - 1))}
+                      className="w-8 h-8 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 flex items-center justify-center font-bold text-sm transition-colors"
+                    >
+                      -
+                    </button>
                     <input
                       type="number"
                       min={1}
                       max={totalUnitsCount > 0 ? totalUnitsCount : 100}
                       value={batchLimit}
                       onChange={(e) => setBatchLimit(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-24 px-3 py-1.5 bg-neutral-900 border border-neutral-700 rounded-lg text-sm font-mono text-neutral-100 focus:outline-none focus:border-indigo-500"
+                      className="w-20 px-3 py-1.5 text-center bg-neutral-900 border border-neutral-700 rounded-lg text-sm font-mono text-neutral-100 focus:outline-none focus:border-indigo-500"
                     />
-                    <span className="text-xs text-neutral-400">
+                    <button
+                      type="button"
+                      onClick={() => setBatchLimit(prev => Math.min(totalUnitsCount || 100, prev + 1))}
+                      className="w-8 h-8 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 flex items-center justify-center font-bold text-sm transition-colors"
+                    >
+                      +
+                    </button>
+                    <span className="text-xs text-neutral-400 ml-1">
                       out of {totalUnitsCount} active {totalUnitsCount === 1 ? 'person/card' : 'people/cards'}
                     </span>
                   </div>

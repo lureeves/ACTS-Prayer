@@ -19,6 +19,7 @@ import {
 import { PrayerSubject, PrayerCard, ScheduleCadenceType, EveryNWeeksSchedule, TopicPriority } from '../types/prayer';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { TopicScheduleModal } from './TopicScheduleModal';
+import { BatchPrayersModal } from './BatchPrayersModal';
 import { formatSubjectSchedule, getSubjectPriority } from '../services/scheduler';
 
 interface SupplicationTreeProps {
@@ -62,6 +63,7 @@ export const SupplicationTree: React.FC<SupplicationTreeProps> = ({
   const [updateInput, setUpdateInput] = useState<{ [key: string]: string }>({});
   const [activeUpdateCard, setActiveUpdateCard] = useState<string | null>(null);
   const [schedulingSubject, setSchedulingSubject] = useState<PrayerSubject | null>(null);
+  const [batchingSubject, setBatchingSubject] = useState<PrayerSubject | null>(null);
   const [newTopicName, setNewTopicName] = useState<string>('');
 
   const toggleSubject = (name: string) => {
@@ -177,6 +179,28 @@ export const SupplicationTree: React.FC<SupplicationTreeProps> = ({
                   <Calendar className="w-3 h-3" />
                   <span>{formatSubjectSchedule(subject)}</span>
                   <Settings2 className="w-2.5 h-2.5 opacity-60" />
+                </button>
+
+                {/* Batch Prayers Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setBatchingSubject(subject);
+                  }}
+                  className={`text-[10px] font-mono px-2.5 py-1 rounded-full border transition-all flex items-center gap-1.5 ${
+                    subject.sessionCardLimit && subject.sessionCardLimit > 0
+                      ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/25 shadow-sm font-medium'
+                      : 'bg-neutral-800 text-neutral-400 border-neutral-700/60 hover:text-neutral-200 hover:border-neutral-600'
+                  }`}
+                  title="Configure batch prayer limits (e.g. 5 at a time, sequential or random)"
+                >
+                  <Layers className="w-3 h-3 text-indigo-400" />
+                  <span>
+                    {subject.sessionCardLimit && subject.sessionCardLimit > 0
+                      ? `Batch: ${subject.sessionCardLimit} (${subject.cardSelectionMode === 'random' ? 'Rand' : 'Seq'})`
+                      : 'Batch Prayers'}
+                  </span>
                 </button>
 
                 <span className="text-xs px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-300 font-mono">
@@ -500,6 +524,21 @@ export const SupplicationTree: React.FC<SupplicationTreeProps> = ({
         onSaveSchedule={(name, sched) => {
           if (onUpdateSchedule) {
             onUpdateSchedule(name, sched);
+          }
+        }}
+      />
+
+      {/* Batch Prayers Modal */}
+      <BatchPrayersModal
+        isOpen={!!batchingSubject}
+        onClose={() => setBatchingSubject(null)}
+        subject={batchingSubject}
+        onSaveBatch={(name, config) => {
+          if (onUpdateSchedule) {
+            onUpdateSchedule(name, {
+              schedulingMode: batchingSubject?.schedulingMode ?? 0,
+              ...config
+            });
           }
         }}
       />

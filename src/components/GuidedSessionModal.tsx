@@ -854,131 +854,158 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                     const groupIdentifier = group.groupId;
                     const isAddingSubHere = addingSubPrayerId === groupIdentifier;
 
-                    // Cards with sub-information / updates
+                    // Cards with sub-information / updates (e.g. Person with multiple requests in a horizontal tree chart)
                     if (group.rootTitle && group.cards.length > 0) {
+                      const cardCount = group.cards.length;
+
                       return (
                         <div
                           key={group.groupId}
-                          className="group relative p-3 sm:p-3.5 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm space-y-1.5 transition-all hover:border-neutral-700/80"
+                          className="group relative p-3 sm:p-4 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm transition-all hover:border-neutral-700/80"
                         >
-                          {/* Person/Topic Header - Snug spacing, matching regular card typography */}
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <InlineEditableText
-                                value={group.rootTitle}
-                                onSave={(newVal) => {
-                                  if (group.rootCard) {
-                                    handleCardTextEdited(group.rootCard, newVal);
-                                  }
-                                }}
-                                className="text-sm sm:text-base font-serif text-neutral-100 leading-snug font-medium"
-                              />
-                            </div>
-
-                            {/* Right side actions on hover: + Sub-prayer on top, Archive below */}
-                            <div className="shrink-0 flex flex-col items-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setAddingSubPrayerId(isAddingSubHere ? null : groupIdentifier);
-                                  setNewSubPrayerText('');
-                                }}
-                                title="Add sub-prayer for this person"
-                                className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
-                              >
-                                <Plus className="w-3 h-3 text-amber-400" />
-                                <span>Sub-prayer</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (group.rootCard) handleArchive(group.rootCard);
-                                }}
-                                title="Archive this prayer"
-                                className="px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95"
-                              >
-                                <Archive className="w-3 h-3 text-neutral-400" />
-                                <span>Archive</span>
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Inline Sub-Prayer Input Box (when triggered) */}
-                          {isAddingSubHere && (
-                            <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-700/80 space-y-2 animate-fadeIn my-1">
-                              <input
-                                type="text"
-                                value={newSubPrayerText}
-                                onChange={(e) => setNewSubPrayerText(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    if (group.rootCard) handleConfirmAddSubPrayer(group.rootCard);
-                                  } else if (e.key === 'Escape') {
-                                    setAddingSubPrayerId(null);
-                                    setNewSubPrayerText('');
-                                  }
-                                }}
-                                placeholder={`Add sub-prayer for ${group.rootTitle}...`}
-                                autoFocus
-                                className="w-full px-3 py-1.5 bg-neutral-950 border border-neutral-700 rounded-lg text-xs font-serif text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-amber-500"
-                              />
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setAddingSubPrayerId(null);
-                                    setNewSubPrayerText('');
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0">
+                            {/* LEFT NODE: Person Name & Action Buttons */}
+                            <div className="w-full sm:w-36 md:w-48 shrink-0 relative flex sm:flex-col justify-between sm:justify-center pr-3 py-1">
+                              <div className="min-w-0 pr-1">
+                                <InlineEditableText
+                                  value={group.rootTitle}
+                                  onSave={(newVal) => {
+                                    if (group.rootCard) {
+                                      handleCardTextEdited(group.rootCard, newVal);
+                                    }
                                   }}
-                                  className="px-2.5 py-1 text-neutral-400 hover:text-white text-xs transition-colors"
-                                >
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (group.rootCard) handleConfirmAddSubPrayer(group.rootCard);
-                                  }}
-                                  disabled={!newSubPrayerText.trim()}
-                                  className="px-3 py-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-neutral-950 text-xs font-semibold rounded-lg transition-colors"
-                                >
-                                  Add
-                                </button>
+                                  className="text-sm sm:text-base font-serif text-neutral-100 font-semibold leading-snug tracking-tight"
+                                />
                               </div>
-                            </div>
-                          )}
 
-                          {/* Sub-portion (Updates under this Topic/Person) - Tight snug gap, clean text */}
-                          <div className="space-y-1.5 pt-1 border-t border-neutral-800/40">
-                            {group.cards.map((card, cIdx) => (
-                              <div
-                                key={card.createdDate + cIdx}
-                                className="group/sub px-3 py-2 sm:py-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800/70 flex items-start justify-between gap-3 transition-colors hover:border-neutral-700/80"
-                              >
-                                <div className="flex-1 min-w-0 text-sm sm:text-base font-serif text-neutral-200 leading-relaxed font-normal">
-                                  <InlineEditableText
-                                    value={card.text}
-                                    onSave={(newVal) => handleCardTextEdited(card, newVal)}
-                                    isMarkdown={card.isMarkdown}
-                                  />
-                                </div>
+                              {/* Action buttons on hover: + Sub-prayer & Archive */}
+                              <div className="flex items-center gap-1.5 sm:mt-2 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAddingSubPrayerId(isAddingSubHere ? null : groupIdentifier);
+                                    setNewSubPrayerText('');
+                                  }}
+                                  title="Add sub-prayer for this person"
+                                  className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
+                                >
+                                  <Plus className="w-3 h-3 text-amber-400" />
+                                  <span>Sub-prayer</span>
+                                </button>
 
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleArchive(card);
+                                    if (group.rootCard) handleArchive(group.rootCard);
                                   }}
-                                  title="Archive this sub-prayer"
-                                  className="opacity-0 group-hover/sub:opacity-100 transition-opacity duration-200 px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95 shrink-0"
+                                  title="Archive this person & all requests"
+                                  className="px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95"
                                 >
                                   <Archive className="w-3 h-3 text-neutral-400" />
                                   <span>Archive</span>
                                 </button>
                               </div>
-                            ))}
+
+                              {/* Horizontal connector line extending rightward to the tree rail */}
+                              <div className="hidden sm:block absolute -right-[1px] top-1/2 -translate-y-1/2 w-3 sm:w-4 h-[1.5px] bg-neutral-700/80" />
+                            </div>
+
+                            {/* RIGHT SIDE: Horizontal tree chart branching to each prayer request */}
+                            <div className="relative flex-1 min-w-0 sm:pl-5 md:pl-7 space-y-2 py-0.5">
+                              {/* Continuous vertical trunk connecting branches when > 1 card */}
+                              {cardCount > 1 && (
+                                <div className="hidden sm:block absolute left-0 top-[20px] bottom-[20px] w-[1.5px] bg-neutral-700/80" />
+                              )}
+
+                              {group.cards.map((card, cIdx) => (
+                                <div
+                                  key={card.createdDate + cIdx}
+                                  className="group/sub relative flex items-center"
+                                >
+                                  {/* Horizontal branch line turning into this request card */}
+                                  <div className="hidden sm:block absolute -left-5 md:-left-7 top-1/2 -translate-y-1/2 w-5 md:w-7 h-[1.5px] bg-neutral-700/80" />
+
+                                  {/* Small subtle branch node dot */}
+                                  <div className="hidden sm:block absolute -left-5 md:-left-7 top-1/2 -translate-y-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-neutral-500 border border-neutral-800" />
+
+                                  {/* The Prayer Request Card */}
+                                  <div className="w-full px-3 py-2 sm:py-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800/70 flex items-start justify-between gap-3 transition-colors hover:border-neutral-700/80">
+                                    <div className="flex-1 min-w-0 text-sm sm:text-base font-serif text-neutral-200 leading-relaxed font-normal">
+                                      <InlineEditableText
+                                        value={card.text}
+                                        onSave={(newVal) => handleCardTextEdited(card, newVal)}
+                                        isMarkdown={card.isMarkdown}
+                                      />
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleArchive(card);
+                                      }}
+                                      title="Archive this sub-prayer"
+                                      className="opacity-0 group-hover/sub:opacity-100 transition-opacity duration-200 px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95 shrink-0"
+                                    >
+                                      <Archive className="w-3 h-3 text-neutral-400" />
+                                      <span>Archive</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+
+                              {/* Inline Sub-Prayer Input Box (when triggered) */}
+                              {isAddingSubHere && (
+                                <div className="relative flex items-center animate-fadeIn pt-1">
+                                  {/* Horizontal branch line connecting new input to tree */}
+                                  <div className="hidden sm:block absolute -left-5 md:-left-7 top-1/2 -translate-y-1/2 w-5 md:w-7 h-[1.5px] bg-amber-500/60" />
+                                  <div className="hidden sm:block absolute -left-5 md:-left-7 top-1/2 -translate-y-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-amber-400" />
+
+                                  <div className="w-full p-2.5 rounded-lg bg-neutral-900/95 border border-amber-500/40 space-y-2 shadow-lg">
+                                    <input
+                                      type="text"
+                                      value={newSubPrayerText}
+                                      onChange={(e) => setNewSubPrayerText(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          if (group.rootCard) handleConfirmAddSubPrayer(group.rootCard);
+                                        } else if (e.key === 'Escape') {
+                                          setAddingSubPrayerId(null);
+                                          setNewSubPrayerText('');
+                                        }
+                                      }}
+                                      placeholder={`Add sub-prayer for ${group.rootTitle}...`}
+                                      autoFocus
+                                      className="w-full px-3 py-1.5 bg-neutral-950 border border-neutral-700 rounded-lg text-xs font-serif text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-amber-500"
+                                    />
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setAddingSubPrayerId(null);
+                                          setNewSubPrayerText('');
+                                        }}
+                                        className="px-2.5 py-1 text-neutral-400 hover:text-white text-xs transition-colors"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (group.rootCard) handleConfirmAddSubPrayer(group.rootCard);
+                                        }}
+                                        disabled={!newSubPrayerText.trim()}
+                                        className="px-3 py-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-neutral-950 text-xs font-semibold rounded-lg transition-colors"
+                                      >
+                                        Add
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );

@@ -389,7 +389,7 @@ export function App() {
     categoryName: string,
     subjectName: string,
     schedule: {
-      schedulingMode: number;
+      schedulingMode?: number;
       scheduleType?: ScheduleCadenceType;
       dayOfTheWeekMask?: number;
       everyNWeeks?: EveryNWeeksSchedule;
@@ -410,7 +410,8 @@ export function App() {
           if (normalize(sub.name) === targetNormalized) {
             const updatedSub: PrayerSubject = {
               ...sub,
-              ...schedule
+              ...schedule,
+              schedulingMode: schedule.schedulingMode !== undefined ? schedule.schedulingMode : (sub.schedulingMode ?? 0)
             };
             if (!schedule.sessionCardLimit) {
               delete updatedSub.sessionCardLimit;
@@ -701,6 +702,9 @@ export function App() {
         onAddCardUpdate={handleAddCardUpdate}
         onArchiveCard={handleArchiveRequest}
         onAddNewCard={handleAddNewCard}
+        onUpdateTopicBatch={(categoryName, subjectName, config) => {
+          handleUpdateTopicSchedule(categoryName, subjectName, config);
+        }}
       />
 
       {/* Preferences & Storage Modal */}

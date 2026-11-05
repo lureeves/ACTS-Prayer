@@ -27,6 +27,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [supplicationLimit, setSupplicationLimit] = useState(settings.supplicationTopicsLimit || 3);
   const [filePath, setFilePath] = useState(settings.filePath || currentFilePath);
   const [soundEnabled, setSoundEnabled] = useState(settings.soundEnabled);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
   const isTauri = isTauriEnvironment();
 
   if (!isOpen) return null;
@@ -69,7 +70,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         const parsed = JSON.parse(event.target?.result as string);
         if (parsed.Categories) {
           onImportData(parsed);
-          alert('Prayer backup successfully loaded!');
+          setImportStatus(`Successfully loaded ${parsed.Metadata?.card_count || ''} prayer cards!`);
+          setTimeout(() => {
+            onClose();
+          }, 800);
         } else {
           alert('Invalid prayer file format: missing Categories');
         }
@@ -78,6 +82,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       }
     };
     reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
@@ -233,12 +238,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span>Sync from iCloud Drive</span>
                 <input
                   type="file"
-                  accept=".json"
+                  accept=".json,application/json,text/plain,*"
                   onChange={handleFileUpload}
                   className="hidden"
                 />
               </label>
             </div>
+
+            {importStatus && (
+              <div className="p-2.5 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2 animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{importStatus}</span>
+              </div>
+            )}
           </div>
 
           {/* File Storage Path */}

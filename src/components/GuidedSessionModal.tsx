@@ -12,12 +12,14 @@ import {
   ArrowUp,
   ArrowDown,
   Plus,
-  Archive
+  Archive,
+  Layers
 } from 'lucide-react';
-import { ACTSStage, ACTS_STAGES, PrayerCard } from '../types/prayer';
-import { ActiveSessionItem } from '../services/scheduler';
+import { ACTSStage, ACTS_STAGES, PrayerCard, PrayerSubject } from '../types/prayer';
+import { ActiveSessionItem, selectSubjectSessionCards } from '../services/scheduler';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { TimerBar } from './TimerBar';
+import { BatchPrayersModal } from './BatchPrayersModal';
 
 interface GuidedSessionModalProps {
   isOpen: boolean;
@@ -31,6 +33,15 @@ interface GuidedSessionModalProps {
   onAddCardUpdate?: (subjectName: string, parentCard: PrayerCard, newText: string) => PrayerCard | null;
   onArchiveCard?: (subjectName: string, card: PrayerCard) => void;
   onAddNewCard?: (subjectName: string, text: string) => PrayerCard | null;
+  onUpdateTopicBatch?: (
+    categoryName: string,
+    subjectName: string,
+    config: {
+      sessionCardLimit?: number;
+      cardSelectionMode?: 'sequential' | 'random';
+      cardRotationOffset?: number;
+    }
+  ) => void;
 }
 
 const STAGE_THEMES: Record<ACTSStage, {
@@ -180,7 +191,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   onEditCardText,
   onAddCardUpdate,
   onArchiveCard,
-  onAddNewCard
+  onAddNewCard,
+  onUpdateTopicBatch
 }) => {
   const [currentStageIndex, setCurrentStageIndex] = useState<number>(0);
   const [currentTopicIndex, setCurrentTopicIndex] = useState<number>(0);
@@ -190,6 +202,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   const [newSubPrayerText, setNewSubPrayerText] = useState<string>('');
   const [isAddingNewPrayer, setIsAddingNewPrayer] = useState<boolean>(false);
   const [newPrayerText, setNewPrayerText] = useState<string>('');
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState<boolean>(false);
   const prevIsOpenRef = useRef<boolean>(false);
 
   // Lock background body scroll to eliminate outer page scrollbars
@@ -562,6 +575,46 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
     setNewPrayerText('');
   };
 
+  // Handle saving batch configuration during prayer session
+  const handleSaveBatchInSession = (
+    subjectName: string,
+    config: {
+      sessionCardLimit?: number;
+      cardSelectionMode?: 'sequential' | 'random';
+      cardRotationOffset?: number;
+    }
+  ) => {
+    if (!activeItem) return;
+    const updatedSubject: PrayerSubject = {
+      ...activeItem.subject,
+      sessionCardLimit: config.sessionCardLimit,
+      cardSelectionMode: config.cardSelectionMode,
+      cardRotationOffset: config.cardRotationOffset
+    };
+    if (!config.sessionCardLimit) {
+      delete updatedSubject.sessionCardLimit;
+      delete updatedSubject.cardSelectionMode;
+    }
+
+    const updatedActiveCards = selectSubjectSessionCards(updatedSubject);
+
+    const updatedItem: ActiveSessionItem = {
+      ...activeItem,
+      cards: updatedActiveCards,
+      subject: updatedSubject
+    };
+
+    const updatedStageTopics = [...stageTopics];
+    updatedStageTopics[currentTopicIndex] = updatedItem;
+
+    setActivePlan({
+      ...activePlan,
+      [currentStage]: updatedStageTopics
+    });
+
+    onUpdateTopicBatch?.(activeItem.categoryName, subjectName, config);
+  };
+
   // Handle archiving prayer card or sub-prayer
   const handleArchive = (card: PrayerCard) => {
     if (!activeItem || !onArchiveCard) return;
@@ -740,6 +793,25 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5">
+                  {/* Batch Prayers Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsBatchModalOpen(true)}
+                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-all flex items-center gap-1 cursor-pointer ${
+                      activeItem.subject.sessionCardLimit && activeItem.subject.sessionCardLimit > 0
+                        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 hover:bg-indigo-500/30 font-medium'
+                        : 'bg-neutral-800 text-neutral-400 border-neutral-700/60 hover:text-neutral-200 hover:border-neutral-600'
+                    }`}
+                    title="Configure batch cards for this topic (default 5, sequential or random)"
+                  >
+                    <Layers className="w-2.5 h-2.5 text-indigo-400" />
+                    <span>
+                      {activeItem.subject.sessionCardLimit && activeItem.subject.sessionCardLimit > 0
+                        ? `Batch: ${activeItem.subject.sessionCardLimit} (${activeItem.subject.cardSelectionMode === 'random' ? 'Rand' : 'Seq'})`
+                        : 'Batch'}
+                    </span>
+                  </button>
+
                   {activeItem.cards.length > 0 ? (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700/60">
                       {activeItem.cards.length} {currentStage === 'Adoration' 
@@ -1136,6 +1208,14 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
           </div>
         )}
       </div>
+
+      {/* Batch Prayers Configuration Modal */}
+      <BatchPrayersModal
+        isOpen={isBatchModalOpen}
+        onClose={() => setIsBatchModalOpen(false)}
+        subject={activeItem?.subject || null}
+        onSaveBatch={handleSaveBatchInSession}
+      />
     </div>
   );
 };

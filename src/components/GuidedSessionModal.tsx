@@ -12,10 +12,7 @@ import {
   ArrowUp,
   ArrowDown,
   Plus,
-  Archive,
-  Play,
-  Pause,
-  Timer
+  Archive
 } from 'lucide-react';
 import { ACTSStage, ACTS_STAGES, PrayerCard } from '../types/prayer';
 import { ActiveSessionItem } from '../services/scheduler';
@@ -272,70 +269,6 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
   const handlePreviousRef = useRef(handlePrevious);
   handlePreviousRef.current = handlePrevious;
-
-  // Auto-Advance State (0 = Off, or seconds e.g. 15, 30, 45, 60, 90)
-  const [autoAdvanceInterval, setAutoAdvanceInterval] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('acts_auto_advance_interval');
-      return saved ? Number(saved) : 0;
-    } catch {
-      return 0;
-    }
-  });
-  const [isAutoAdvancePaused, setIsAutoAdvancePaused] = useState<boolean>(false);
-  const [autoAdvanceRemaining, setAutoAdvanceRemaining] = useState<number>(0);
-
-  const handleSetAutoAdvanceInterval = (seconds: number) => {
-    setAutoAdvanceInterval(seconds);
-    setAutoAdvanceRemaining(seconds);
-    setIsAutoAdvancePaused(false);
-    try {
-      localStorage.setItem('acts_auto_advance_interval', String(seconds));
-    } catch {
-      // ignore storage error
-    }
-  };
-
-  const toggleAutoAdvancePlay = () => {
-    if (autoAdvanceInterval === 0) {
-      handleSetAutoAdvanceInterval(30);
-    } else {
-      setIsAutoAdvancePaused(prev => !prev);
-    }
-  };
-
-  // Reset auto-advance countdown whenever the page (stage or topic) changes
-  useEffect(() => {
-    if (autoAdvanceInterval > 0) {
-      setAutoAdvanceRemaining(autoAdvanceInterval);
-    }
-  }, [currentStageIndex, currentTopicIndex, autoAdvanceInterval]);
-
-  // Auto-advance tick countdown
-  useEffect(() => {
-    if (
-      !isOpen ||
-      completed ||
-      autoAdvanceInterval <= 0 ||
-      isAutoAdvancePaused ||
-      isAddingNewPrayer ||
-      Boolean(addingSubPrayerId)
-    ) {
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setAutoAdvanceRemaining(prev => {
-        if (prev <= 0.1) {
-          handleNextRef.current();
-          return autoAdvanceInterval;
-        }
-        return Math.max(0, Number((prev - 0.1).toFixed(1)));
-      });
-    }, 100);
-
-    return () => window.clearInterval(intervalId);
-  }, [isOpen, completed, autoAdvanceInterval, isAutoAdvancePaused, isAddingNewPrayer, addingSubPrayerId]);
 
   // 1. Keyboard Navigation: Right arrow -> Next page, Left arrow -> Previous page
   useEffect(() => {
@@ -1171,80 +1104,19 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
               </div>
             </div>
 
-            {/* Auto-Advance Progress Bar (shown when auto-advance is enabled) */}
-            {autoAdvanceInterval > 0 && (
-              <div className="w-full bg-neutral-900/80 h-1 rounded-full overflow-hidden mt-2 mb-1">
-                <div
-                  className={`h-full transition-all duration-100 ease-linear rounded-full ${
-                    isAutoAdvancePaused || isAddingNewPrayer || Boolean(addingSubPrayerId)
-                      ? 'bg-neutral-600'
-                      : 'bg-gradient-to-r from-amber-500 to-amber-400'
-                  }`}
-                  style={{
-                    width: `${Math.min(100, Math.max(0, ((autoAdvanceInterval - autoAdvanceRemaining) / autoAdvanceInterval) * 100))}%`
-                  }}
-                />
-              </div>
-            )}
-
             {/* Bottom Controls - Cleanly Anchored at Bottom, Never Pushed Off Screen */}
-            <div className="shrink-0 flex items-center justify-between w-full pt-2">
+            <div className="shrink-0 flex items-center justify-between w-full pt-3">
               <button
                 type="button"
                 onClick={handlePrevious}
                 disabled={currentStageIndex === 0 && currentTopicIndex === 0}
-                className="px-3.5 py-2 rounded-xl border border-neutral-800 hover:bg-neutral-900 text-neutral-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none text-xs font-medium flex items-center gap-1.5 transition-all active:scale-95"
+                className="px-4 py-2 rounded-xl border border-neutral-800 hover:bg-neutral-900 text-neutral-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none text-xs font-medium flex items-center gap-1.5 transition-all active:scale-95"
                 title="Previous topic (or swipe right with 2 fingers / Left Arrow ←)"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
                 <span>Previous</span>
                 <span className="hidden sm:inline text-[10px] text-neutral-500 font-mono">←</span>
               </button>
-
-              {/* Center: Auto-Advance Setting & Controls */}
-              <div className="flex items-center gap-1.5 bg-neutral-900/90 border border-neutral-800 rounded-xl px-2.5 py-1 text-xs shadow-sm">
-                <button
-                  type="button"
-                  onClick={toggleAutoAdvancePlay}
-                  title={
-                    autoAdvanceInterval === 0
-                      ? 'Turn on auto-advance'
-                      : isAutoAdvancePaused
-                      ? 'Resume auto-advance'
-                      : 'Pause auto-advance'
-                  }
-                  className="flex items-center gap-1.5 text-neutral-300 hover:text-white transition-colors"
-                >
-                  {autoAdvanceInterval > 0 && !isAutoAdvancePaused && !isAddingNewPrayer && !addingSubPrayerId ? (
-                    <Pause className="w-3 h-3 text-amber-400" />
-                  ) : (
-                    <Play className="w-3 h-3 text-neutral-400 hover:text-amber-400" />
-                  )}
-                  <span className="font-medium text-[11px]">
-                    {autoAdvanceInterval === 0
-                      ? 'Auto-advance'
-                      : isAutoAdvancePaused || isAddingNewPrayer || Boolean(addingSubPrayerId)
-                      ? `Paused (${Math.ceil(autoAdvanceRemaining)}s)`
-                      : `${Math.ceil(autoAdvanceRemaining)}s`}
-                  </span>
-                </button>
-
-                <div className="h-3 w-px bg-neutral-800" />
-
-                <select
-                  value={autoAdvanceInterval}
-                  onChange={(e) => handleSetAutoAdvanceInterval(Number(e.target.value))}
-                  className="bg-transparent text-[11px] text-neutral-400 hover:text-neutral-200 border-none focus:outline-none cursor-pointer py-0.5"
-                  title="Auto-advance pace per topic"
-                >
-                  <option value={0} className="bg-neutral-900 text-neutral-300">Off</option>
-                  <option value={15} className="bg-neutral-900 text-neutral-300">15s</option>
-                  <option value={30} className="bg-neutral-900 text-neutral-300">30s</option>
-                  <option value={45} className="bg-neutral-900 text-neutral-300">45s</option>
-                  <option value={60} className="bg-neutral-900 text-neutral-300">60s</option>
-                  <option value={90} className="bg-neutral-900 text-neutral-300">90s</option>
-                </select>
-              </div>
 
               <button
                 type="button"

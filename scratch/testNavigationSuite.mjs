@@ -50,16 +50,4 @@ assert.equal(shouldHandleArrowKey('ArrowLeft', 'TEXTAREA', false), false, 'Arrow
 assert.equal(shouldHandleArrowKey('ArrowRight', 'DIV', true), false, 'ArrowRight in contentEditable is not hijacked');
 console.log('✓ Keyboard arrow filter verified');
 
-// 4. Auto-advance remaining decrement & boundary
-function tickAutoAdvance(remaining, step = 0.1) {
-  if (remaining <= 0.1) {
-    return { shouldAdvance: true, nextRemaining: 0 };
-  }
-  return { shouldAdvance: false, nextRemaining: Math.max(0, Number((remaining - step).toFixed(1))) };
-}
-
-assert.deepEqual(tickAutoAdvance(15.0), { shouldAdvance: false, nextRemaining: 14.9 });
-assert.deepEqual(tickAutoAdvance(0.1), { shouldAdvance: true, nextRemaining: 0 });
-console.log('✓ Auto-advance countdown tick logic verified');
-
 console.log('\n--- All Navigation & Gesture Logic Tests Passed (100%)! ---\n');

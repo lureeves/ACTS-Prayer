@@ -1,5 +1,7 @@
 # ACTS Prayer Desktop & Web Application
 
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE.md)
+
 A desktop prayer application based on the **ACTS** method (**Adoration, Confession, Thanksgiving, Supplication**). Built with **Tauri 2**, **React 18**, **TypeScript**, and **Tailwind CSS**.
 
 Structured to run as a native standalone macOS desktop app bundle (`.app` / `.dmg`) with direct local JSON file system persistence, and deployable as a static web app on **GitHub Pages**.
@@ -131,3 +133,17 @@ Prayer App/
     └── src/
         └── main.rs                # Tauri application entry point & plugin initialization
 ```
+
+---
+
+## 📄 Licensing
+
+This project is licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE.md)** (`PolyForm-Noncommercial-1.0.0`).
+
+- **How it works:** Grants rights to use, modify, and distribute the software for noncommercial purposes only. Commercial use is strictly prohibited unless an entity contacts you for a commercial grant.
+- **Why it fits:** Drafted specifically by IP attorneys to replace ambiguous legacy noncommercial clauses. It provides a clean, legally tested definition of what constitutes commercial versus noncommercial activity, and explicitly protects personal use, religious observance, study, and noncommercial organizations.
+
+For full license terms and conditions, refer to the [LICENSE.md](LICENSE.md) file or view the official specification at [polyformproject.org](https://polyformproject.org/licenses/noncommercial/1.0.0).
+
+> **Commercial Inquiries:** If you are interested in commercial grants, proprietary distribution, or commercial licensing exceptions, please contact [Lukas Reeves](https://github.com/lureeves).
+

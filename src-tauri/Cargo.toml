@@ -4,6 +4,7 @@ version = "1.0.0"
 description = "ACTS Method Guided Desktop Prayer App"
 authors = ["Lukas Reeves"]
 edition = "2021"
+license = "PolyForm-Noncommercial-1.0.0"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

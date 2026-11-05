@@ -39,6 +39,9 @@ export interface PrayerSubject {
   scheduleType?: ScheduleCadenceType;
   everyNWeeks?: EveryNWeeksSchedule;
   daysOfMonth?: number[]; // e.g. [1, 15]
+  sessionCardLimit?: number; // Only surface N cards/people per prayer session
+  cardSelectionMode?: 'sequential' | 'random'; // Sequential rotation (next set each time) or random
+  cardRotationOffset?: number; // Tracks current offset for sequential rotation across sessions
   seenCount?: number;
   isInbox?: boolean;
   cards: PrayerCard[];

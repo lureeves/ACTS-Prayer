@@ -1,7 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, RotateCw, Check, Sparkles, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { 
+  X, 
+  Calendar, 
+  Clock, 
+  RotateCw, 
+  Check, 
+  Sparkles, 
+  ArrowUp, 
+  ArrowDown, 
+  Minus,
+  Layers,
+  Shuffle,
+  ListOrdered
+} from 'lucide-react';
 import { PrayerSubject, ScheduleCadenceType, EveryNWeeksSchedule, TopicPriority } from '../types/prayer';
-import { DAY_NAMES, FULL_DAY_NAMES, getSubjectPriority } from '../services/scheduler';
+import { DAY_NAMES, FULL_DAY_NAMES, getSubjectPriority, getSubjectPrayerUnits } from '../services/scheduler';
 
 interface TopicScheduleModalProps {
   isOpen: boolean;
@@ -17,6 +30,9 @@ interface TopicScheduleModalProps {
       daysOfMonth?: number[];
       priority?: TopicPriority;
       priorityLevel?: number;
+      sessionCardLimit?: number;
+      cardSelectionMode?: 'sequential' | 'random';
+      cardRotationOffset?: number;
     }
   ) => void;
 }
@@ -34,6 +50,10 @@ export const TopicScheduleModal: React.FC<TopicScheduleModalProps> = ({
   const [intervalDayOfWeek, setIntervalDayOfWeek] = useState<number>(3); // Wednesday
   const [selectedMonthDays, setSelectedMonthDays] = useState<number[]>([1, 15]);
   const [priority, setPriority] = useState<TopicPriority>('medium');
+  const [isBatchEnabled, setIsBatchEnabled] = useState<boolean>(false);
+  const [batchLimit, setBatchLimit] = useState<number>(5);
+  const [batchMode, setBatchMode] = useState<'sequential' | 'random'>('sequential');
+  const [rotationOffset, setRotationOffset] = useState<number>(0);
 
   useEffect(() => {
     if (subject && isOpen) {
@@ -44,10 +64,19 @@ export const TopicScheduleModal: React.FC<TopicScheduleModalProps> = ({
       setIntervalDayOfWeek(subject.everyNWeeks?.dayOfWeek ?? 3);
       setSelectedMonthDays(subject.daysOfMonth ?? [1, 15]);
       setPriority(getSubjectPriority(subject));
+
+      const hasLimit = typeof subject.sessionCardLimit === 'number' && subject.sessionCardLimit > 0;
+      setIsBatchEnabled(hasLimit);
+      setBatchLimit(hasLimit ? subject.sessionCardLimit! : 5);
+      setBatchMode(subject.cardSelectionMode || 'sequential');
+      setRotationOffset(subject.cardRotationOffset || 0);
     }
   }, [subject, isOpen]);
 
   if (!isOpen || !subject) return null;
+
+  const activeUnits = getSubjectPrayerUnits(subject.cards);
+  const totalUnitsCount = activeUnits.length;
 
   const toggleDayOfWeek = (dayIdx: number) => {
     const bit = 1 << dayIdx;
@@ -63,6 +92,12 @@ export const TopicScheduleModal: React.FC<TopicScheduleModalProps> = ({
   const handleSave = () => {
     const priorityLevel = priority === 'high' ? 3 : priority === 'low' ? 1 : 2;
 
+    const batchConfig = {
+      sessionCardLimit: isBatchEnabled && batchLimit > 0 ? Math.max(1, batchLimit) : undefined,
+      cardSelectionMode: isBatchEnabled && batchLimit > 0 ? batchMode : undefined,
+      cardRotationOffset: rotationOffset
+    };
+
     if (mode === 0) {
       onSaveSchedule(subject.name, {
         schedulingMode: 0,
@@ -71,7 +106,8 @@ export const TopicScheduleModal: React.FC<TopicScheduleModalProps> = ({
         everyNWeeks: undefined,
         daysOfMonth: undefined,
         priority,
-        priorityLevel
+        priorityLevel,
+        ...batchConfig
       });
     } else {
       if (cadenceType === 'daysOfWeek') {
@@ -82,7 +118,8 @@ export const TopicScheduleModal: React.FC<TopicScheduleModalProps> = ({
           everyNWeeks: undefined,
           daysOfMonth: undefined,
           priority,
-          priorityLevel
+          priorityLevel,
+          ...batchConfig
         });
       } else if (cadenceType === 'everyNWeeks') {
         onSaveSchedule(subject.name, {
@@ -96,7 +133,8 @@ export const TopicScheduleModal: React.FC<TopicScheduleModalProps> = ({
           },
           daysOfMonth: undefined,
           priority,
-          priorityLevel
+          priorityLevel,
+          ...batchConfig
         });
       } else if (cadenceType === 'daysOfMonth') {
         onSaveSchedule(subject.name, {
@@ -106,7 +144,8 @@ export const TopicScheduleModal: React.FC<TopicScheduleModalProps> = ({
           everyNWeeks: undefined,
           daysOfMonth: selectedMonthDays.length > 0 ? selectedMonthDays : [1],
           priority,
-          priorityLevel
+          priorityLevel,
+          ...batchConfig
         });
       }
     }

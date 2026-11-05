@@ -8,6 +8,86 @@ export interface ActiveSessionItem {
   isPriorityOverride: boolean;
 }
 
+export interface PrayerUnit {
+  id: string;
+  rootTitle?: string;
+  rootCard?: PrayerCard;
+  activeCards: PrayerCard[];
+  allCards: PrayerCard[];
+}
+
+/**
+ * Groups a subject's cards into distinct prayer units (either a person/thread, or an individual standalone card).
+ */
+export function getSubjectPrayerUnits(cards: PrayerCard[]): PrayerUnit[] {
+  const unitsMap = new Map<string, PrayerUnit>();
+  const unitOrder: string[] = [];
+
+  cards.forEach((card, idx) => {
+    const key = card.stackGroup || card.threadId || `card-${card.createdDate}-${card.text}-${idx}`;
+    if (!unitsMap.has(key)) {
+      unitsMap.set(key, {
+        id: key,
+        activeCards: [],
+        allCards: []
+      });
+      unitOrder.push(key);
+    }
+    const unit = unitsMap.get(key)!;
+    unit.allCards.push(card);
+    if (!card.archived) {
+      unit.activeCards.push(card);
+    }
+  });
+
+  const activeUnits: PrayerUnit[] = [];
+  unitOrder.forEach(key => {
+    const unit = unitsMap.get(key)!;
+    if (unit.activeCards.length > 0) {
+      if (unit.allCards.length > 1) {
+        const sorted = [...unit.allCards].sort(
+          (a, b) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime() || (a.ordering || 0) - (b.ordering || 0)
+        );
+        unit.rootTitle = sorted[0].text;
+        unit.rootCard = sorted[0];
+      } else {
+        unit.rootCard = unit.activeCards[0];
+        unit.rootTitle = unit.activeCards[0].text;
+      }
+      activeUnits.push(unit);
+    }
+  });
+
+  return activeUnits;
+}
+
+/**
+ * Selects active cards for a subject during prayer session, respecting sessionCardLimit
+ * and cardSelectionMode ('sequential' batch rotation vs 'random').
+ */
+export function selectSubjectSessionCards(subject: PrayerSubject): PrayerCard[] {
+  const activeUnits = getSubjectPrayerUnits(subject.cards);
+  if (activeUnits.length === 0) return [];
+
+  const limit = subject.sessionCardLimit;
+  if (!limit || limit <= 0 || activeUnits.length <= limit) {
+    return activeUnits.flatMap(u => u.activeCards);
+  }
+
+  if (subject.cardSelectionMode === 'random') {
+    const shuffled = [...activeUnits].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, limit).flatMap(u => u.activeCards);
+  }
+
+  // Sequential rotation: use cardRotationOffset, wrap around
+  const offset = (subject.cardRotationOffset || 0) % activeUnits.length;
+  const chosenUnits: PrayerUnit[] = [];
+  for (let i = 0; i < limit; i++) {
+    chosenUnits.push(activeUnits[(offset + i) % activeUnits.length]);
+  }
+  return chosenUnits.flatMap(u => u.activeCards);
+}
+
 /**
  * Returns YYYY-MM-DD in local time
  */
@@ -319,9 +399,7 @@ export function generateSessionPlan(
     // Flatten into active session items (each item is an attribute/topic with all its verses/cards)
     const items: ActiveSessionItem[] = [];
     for (const subject of selectedSubjects) {
-      const activeCards = subject.cards
-        .filter(c => !c.archived)
-        .sort((a, b) => (a.stackOrder ?? 0) - (b.stackOrder ?? 0) || a.ordering - b.ordering);
+      const activeCards = selectSubjectSessionCards(subject);
 
       items.push({
         categoryName: stage,

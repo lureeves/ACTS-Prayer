@@ -489,6 +489,172 @@ export const TopicScheduleModal: React.FC<TopicScheduleModalProps> = ({
               </button>
             </div>
           </div>
+
+          {/* Card Batching & Limits: Cards per Session */}
+          <div className="space-y-3 pt-4 border-t border-neutral-800/80">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                  <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
+                    Cards Per Session
+                  </label>
+                </div>
+                <p className="text-[11px] text-neutral-500">
+                  Limit how many cards/people to pray for each time this topic surfaces.
+                </p>
+              </div>
+              {totalUnitsCount > 0 && (
+                <span className="text-[11px] font-mono text-neutral-400 bg-neutral-950/80 px-2 py-0.5 rounded-lg border border-neutral-800">
+                  {totalUnitsCount} active {totalUnitsCount === 1 ? 'person/card' : 'people/cards'}
+                </span>
+              )}
+            </div>
+
+            {/* Batching Mode Toggle: All Cards vs Batch */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsBatchEnabled(false)}
+                className={`p-3 rounded-xl border text-left transition-all ${
+                  !isBatchEnabled
+                    ? 'bg-neutral-800 border-indigo-500/80 text-white ring-1 ring-indigo-500/30'
+                    : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-neutral-200">
+                  All Cards
+                </div>
+                <p className="text-[11px] text-neutral-400 mt-1 leading-snug">
+                  Show all active requests in this topic every session.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsBatchEnabled(true)}
+                className={`p-3 rounded-xl border text-left transition-all ${
+                  isBatchEnabled
+                    ? 'bg-indigo-500/15 border-indigo-500/80 text-white ring-1 ring-indigo-500/30'
+                    : 'bg-neutral-950/60 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                }`}
+              >
+                <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-indigo-300">
+                  <Layers className="w-3.5 h-3.5" />
+                  Batch ({batchLimit} at a time)
+                </div>
+                <p className="text-[11px] text-neutral-400 mt-1 leading-snug">
+                  Pray for a subset of cards/people, rotating or shuffling each time.
+                </p>
+              </button>
+            </div>
+
+            {/* If Batch Enabled, show Count and Mode (Sequential vs Random) */}
+            {isBatchEnabled && (
+              <div className="space-y-4 p-4 bg-neutral-950/60 border border-neutral-800/80 rounded-xl animate-fadeIn">
+                {/* Batch Count Input */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-neutral-300">
+                      Number of cards/people per session:
+                    </label>
+                    <div className="flex items-center gap-1">
+                      {[3, 5, 7, 10].map(n => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => setBatchLimit(n)}
+                          className={`px-2 py-0.5 text-[11px] rounded font-mono transition-colors ${
+                            batchLimit === n
+                              ? 'bg-indigo-500 text-white font-bold shadow-sm'
+                              : 'bg-neutral-800 text-neutral-400 hover:text-neutral-200'
+                          }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={totalUnitsCount > 0 ? totalUnitsCount : 100}
+                      value={batchLimit}
+                      onChange={(e) => setBatchLimit(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-24 px-3 py-1.5 bg-neutral-900 border border-neutral-700 rounded-lg text-sm font-mono text-neutral-100 focus:outline-none focus:border-indigo-500"
+                    />
+                    <span className="text-xs text-neutral-400">
+                      out of {totalUnitsCount} active {totalUnitsCount === 1 ? 'person/card' : 'people/cards'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progression Mode: Sequential vs Random */}
+                <div className="space-y-2 pt-2 border-t border-neutral-800/80">
+                  <label className="text-xs font-medium text-neutral-300">
+                    Selection & Rotation Style:
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBatchMode('sequential')}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        batchMode === 'sequential'
+                          ? 'bg-neutral-800 border-indigo-500/80 text-white ring-1 ring-indigo-500/30'
+                          : 'bg-neutral-900/60 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-semibold text-xs sm:text-sm text-indigo-300">
+                        <ListOrdered className="w-3.5 h-3.5" />
+                        Sequential
+                      </div>
+                      <p className="text-[11px] text-neutral-400 mt-1 leading-snug">
+                        Rotates through the list. Next session shows the next {batchLimit} people, and so forth.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBatchMode('random')}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        batchMode === 'random'
+                          ? 'bg-neutral-800 border-indigo-500/80 text-white ring-1 ring-indigo-500/30'
+                          : 'bg-neutral-900/60 border-neutral-800 text-neutral-400 hover:border-neutral-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-semibold text-xs sm:text-sm text-indigo-300">
+                        <Shuffle className="w-3.5 h-3.5" />
+                        Random
+                      </div>
+                      <p className="text-[11px] text-neutral-400 mt-1 leading-snug">
+                        Shuffles cards each session, picking a fresh {batchLimit} cards each time.
+                      </p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Status description */}
+                {batchMode === 'sequential' && totalUnitsCount > 0 && (
+                  <div className="flex items-center justify-between text-xs text-neutral-400 pt-1">
+                    <span>
+                      Next session starts at item #{((rotationOffset % totalUnitsCount) + 1)}.
+                    </span>
+                    {rotationOffset > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setRotationOffset(0)}
+                        className="text-[11px] text-indigo-400 hover:text-indigo-300 underline"
+                      >
+                        Reset to #1
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}

@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { PrayerData, AppSettings, PrayerCard, PrayerSubject, PrayerCategory, ScheduleCadenceType, EveryNWeeksSchedule, TopicPriority } from './types/prayer';
 import { loadPrayerData, savePrayerData, loadSettings, saveSettings, isTauriEnvironment } from './services/storage';
-import { generateSessionPlan, syncDailyRotation, getLocalDateString } from './services/scheduler';
+import { generateSessionPlan, syncDailyRotation, getLocalDateString, getSubjectPrayerUnits } from './services/scheduler';
 import { 
   sanitizeThreadUpdates, 
   moveCardsToArchive, 
@@ -239,11 +239,21 @@ export function App() {
               }
               return c;
             });
+            let nextCardRotationOffset = sub.cardRotationOffset;
+            if (sub.sessionCardLimit && sub.sessionCardLimit > 0 && sub.cardSelectionMode !== 'random') {
+              const activeUnits = getSubjectPrayerUnits(sub.cards);
+              if (activeUnits.length > 0) {
+                const currentOffset = sub.cardRotationOffset || 0;
+                nextCardRotationOffset = (currentOffset + sub.sessionCardLimit) % activeUnits.length;
+              }
+            }
+
             return {
               ...sub,
               lastPrayed: nowIso,
               schedulingTimestamp: nowIso,
               seenCount: (sub.seenCount || 0) + 1,
+              cardRotationOffset: nextCardRotationOffset,
               cards: updatedCards
             };
           }
@@ -428,6 +438,9 @@ export function App() {
       daysOfMonth?: number[];
       priority?: TopicPriority;
       priorityLevel?: number;
+      sessionCardLimit?: number;
+      cardSelectionMode?: 'sequential' | 'random';
+      cardRotationOffset?: number;
     }
   ) => {
     if (!prayerData) return;
@@ -437,10 +450,15 @@ export function App() {
       if (cat.name.trim().toLowerCase() === categoryName.trim().toLowerCase()) {
         const updatedSubjects = cat.subjects.map(sub => {
           if (normalize(sub.name) === targetNormalized) {
-            return {
+            const updatedSub: PrayerSubject = {
               ...sub,
               ...schedule
             };
+            if (!schedule.sessionCardLimit) {
+              delete updatedSub.sessionCardLimit;
+              delete updatedSub.cardSelectionMode;
+            }
+            return updatedSub;
           }
           return sub;
         });

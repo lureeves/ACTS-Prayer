@@ -30,6 +30,7 @@ interface GuidedSessionModalProps {
   onEditCardText?: (categoryName: string, subjectName: string, card: PrayerCard, newText: string) => void;
   onAddCardUpdate?: (subjectName: string, parentCard: PrayerCard, newText: string) => PrayerCard | null;
   onArchiveCard?: (subjectName: string, card: PrayerCard) => void;
+  onAddNewCard?: (subjectName: string, text: string) => PrayerCard | null;
 }
 
 const STAGE_THEMES: Record<ACTSStage, {
@@ -112,7 +113,7 @@ const InlineEditableText: React.FC<InlineEditableTextProps> = ({
   useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.max(28, textareaRef.current.scrollHeight)}px`;
+      textareaRef.current.style.height = `${Math.max(26, textareaRef.current.scrollHeight)}px`;
       textareaRef.current.focus();
     }
   }, [isEditing]);
@@ -139,7 +140,7 @@ const InlineEditableText: React.FC<InlineEditableTextProps> = ({
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
     e.target.style.height = 'auto';
-    e.target.style.height = `${Math.max(28, e.target.scrollHeight)}px`;
+    e.target.style.height = `${Math.max(26, e.target.scrollHeight)}px`;
   };
 
   if (isEditing) {
@@ -178,7 +179,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   onTopicPrayed,
   onEditCardText,
   onAddCardUpdate,
-  onArchiveCard
+  onArchiveCard,
+  onAddNewCard
 }) => {
   const [currentStageIndex, setCurrentStageIndex] = useState<number>(0);
   const [currentTopicIndex, setCurrentTopicIndex] = useState<number>(0);
@@ -186,6 +188,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   const [activePlan, setActivePlan] = useState<Record<ACTSStage, ActiveSessionItem[]>>(sessionPlan);
   const [addingSubPrayerId, setAddingSubPrayerId] = useState<string | null>(null);
   const [newSubPrayerText, setNewSubPrayerText] = useState<string>('');
+  const [isAddingNewPrayer, setIsAddingNewPrayer] = useState<boolean>(false);
+  const [newPrayerText, setNewPrayerText] = useState<string>('');
   const prevIsOpenRef = useRef<boolean>(false);
 
   // Lock background body scroll to eliminate outer page scrollbars
@@ -200,7 +204,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
     };
   }, [isOpen]);
 
-  // Only initialize on initial modal open transition. Adding/editing sub-prayers will NOT reset stage/topic!
+  // Only initialize on initial modal open transition. Adding/editing/archiving will NOT reset stage/topic!
   useEffect(() => {
     if (isOpen && !prevIsOpenRef.current) {
       setActivePlan(sessionPlan);
@@ -209,6 +213,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
       setCompleted(false);
       setAddingSubPrayerId(null);
       setNewSubPrayerText('');
+      setIsAddingNewPrayer(false);
+      setNewPrayerText('');
     }
     prevIsOpenRef.current = isOpen;
   }, [isOpen]);
@@ -227,11 +233,17 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
     if (currentTopicIndex + 1 < stageTopics.length) {
       setCurrentTopicIndex(currentTopicIndex + 1);
+      setIsAddingNewPrayer(false);
+      setNewPrayerText('');
+      setAddingSubPrayerId(null);
     } else {
       // Advance to next ACTS stage
       if (currentStageIndex + 1 < ACTS_STAGES.length) {
         setCurrentStageIndex(currentStageIndex + 1);
         setCurrentTopicIndex(0);
+        setIsAddingNewPrayer(false);
+        setNewPrayerText('');
+        setAddingSubPrayerId(null);
       } else {
         setCompleted(true);
       }
@@ -239,6 +251,10 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   };
 
   const handlePrevious = () => {
+    setIsAddingNewPrayer(false);
+    setNewPrayerText('');
+    setAddingSubPrayerId(null);
+
     if (currentTopicIndex > 0) {
       setCurrentTopicIndex(currentTopicIndex - 1);
     } else if (currentStageIndex > 0) {
@@ -375,6 +391,36 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
     setNewSubPrayerText('');
   };
 
+  // Handle adding a brand new prayer card under the last one in this topic's list
+  const handleConfirmAddNewPrayer = () => {
+    if (!newPrayerText.trim() || !activeItem || !onAddNewCard) return;
+    const addedCard = onAddNewCard(activeItem.subject.name, newPrayerText.trim());
+    if (!addedCard) return;
+
+    const updatedActiveCards = [...activeItem.cards, addedCard];
+    const updatedSubjectCards = [...activeItem.subject.cards, addedCard];
+
+    const updatedItem: ActiveSessionItem = {
+      ...activeItem,
+      cards: updatedActiveCards,
+      subject: {
+        ...activeItem.subject,
+        cards: updatedSubjectCards
+      }
+    };
+
+    const updatedStageTopics = [...stageTopics];
+    updatedStageTopics[currentTopicIndex] = updatedItem;
+
+    setActivePlan({
+      ...activePlan,
+      [currentStage]: updatedStageTopics
+    });
+
+    setIsAddingNewPrayer(false);
+    setNewPrayerText('');
+  };
+
   // Handle archiving prayer card or sub-prayer
   const handleArchive = (card: PrayerCard) => {
     if (!activeItem || !onArchiveCard) return;
@@ -396,8 +442,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
       updatedSubjectCards = activeItem.subject.cards.filter(c => (c.stackGroup || c.threadId) !== key && c.createdDate !== card.createdDate);
     } else {
       // Single sub-prayer or standalone card archived
-      updatedActiveCards = activeItem.cards.filter(c => c.createdDate !== card.createdDate);
-      updatedSubjectCards = activeItem.subject.cards.filter(c => c.createdDate !== card.createdDate);
+      updatedActiveCards = activeItem.cards.filter(c => !(c.createdDate === card.createdDate || (c.text.trim() === card.text.trim() && (c.stackGroup === card.stackGroup || c.threadId === card.threadId))));
+      updatedSubjectCards = activeItem.subject.cards.filter(c => !(c.createdDate === card.createdDate || (c.text.trim() === card.text.trim() && (c.stackGroup === card.stackGroup || c.threadId === card.threadId))));
     }
 
     const updatedItem: ActiveSessionItem = {
@@ -456,6 +502,9 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                 onClick={() => {
                   setCurrentStageIndex(idx);
                   setCurrentTopicIndex(0);
+                  setIsAddingNewPrayer(false);
+                  setNewPrayerText('');
+                  setAddingSubPrayerId(null);
                 }}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all shrink-0 ${
                   isCurrent
@@ -600,9 +649,9 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                       return (
                         <div
                           key={group.groupId}
-                          className="group relative p-3.5 sm:p-4 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm space-y-2.5 transition-all hover:border-neutral-700/80"
+                          className="group relative p-3 sm:p-3.5 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm space-y-1.5 transition-all hover:border-neutral-700/80"
                         >
-                          {/* Person/Topic Header - Exactly same styling as other cards (NOT blue, NO "active update" badge) */}
+                          {/* Person/Topic Header - Snug spacing, matching regular card typography */}
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <InlineEditableText
@@ -612,7 +661,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                     handleCardTextEdited(group.rootCard, newVal);
                                   }
                                 }}
-                                className="text-sm sm:text-base font-serif text-neutral-100 leading-relaxed font-medium"
+                                className="text-sm sm:text-base font-serif text-neutral-100 leading-snug font-medium"
                               />
                             </div>
 
@@ -649,7 +698,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
                           {/* Inline Sub-Prayer Input Box (when triggered) */}
                           {isAddingSubHere && (
-                            <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-700/80 space-y-2 animate-fadeIn">
+                            <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-700/80 space-y-2 animate-fadeIn my-1">
                               <input
                                 type="text"
                                 value={newSubPrayerText}
@@ -691,12 +740,12 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                             </div>
                           )}
 
-                          {/* Sub-portion (Updates under this Topic/Person) - Clean text with no update# or date */}
-                          <div className="space-y-2 pt-1 border-t border-neutral-800/60">
+                          {/* Sub-portion (Updates under this Topic/Person) - Tight snug gap, clean text */}
+                          <div className="space-y-1.5 pt-1 border-t border-neutral-800/40">
                             {group.cards.map((card, cIdx) => (
                               <div
                                 key={card.createdDate + cIdx}
-                                className="group/sub p-2.5 sm:p-3 rounded-lg bg-neutral-900/60 border border-neutral-800/70 flex items-start justify-between gap-3 transition-colors hover:border-neutral-700/80"
+                                className="group/sub px-3 py-2 sm:py-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800/70 flex items-start justify-between gap-3 transition-colors hover:border-neutral-700/80"
                               >
                                 <div className="flex-1 min-w-0 text-sm sm:text-base font-serif text-neutral-200 leading-relaxed font-normal">
                                   <InlineEditableText
@@ -733,7 +782,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                       return (
                         <div
                           key={standaloneId}
-                          className="group relative p-3.5 sm:p-4 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm space-y-2 transition-all hover:border-neutral-700/80"
+                          className="group relative p-3 sm:p-3.5 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm space-y-1.5 transition-all hover:border-neutral-700/80"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
@@ -741,7 +790,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                 value={card.text}
                                 onSave={(newVal) => handleCardTextEdited(card, newVal)}
                                 isMarkdown={card.isMarkdown}
-                                className="text-sm sm:text-base font-serif text-neutral-100 leading-relaxed"
+                                className="text-sm sm:text-base font-serif text-neutral-100 leading-snug"
                               />
                             </div>
 
@@ -778,7 +827,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
                           {/* Inline Sub-Prayer Input Box for standalone card */}
                           {isAddingStandaloneSub && (
-                            <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-700/80 space-y-2 animate-fadeIn">
+                            <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-700/80 space-y-2 animate-fadeIn my-1">
                               <input
                                 type="text"
                                 value={newSubPrayerText}
@@ -821,6 +870,66 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                       );
                     });
                   })
+                )}
+
+                {/* Option for new prayer under the last one in the list */}
+                {activeItem.cards.length > 0 && (
+                  <div className="pt-2">
+                    {isAddingNewPrayer ? (
+                      <div className="p-3 sm:p-4 rounded-xl bg-neutral-950/80 border border-neutral-700/80 space-y-2.5 animate-fadeIn">
+                        <div className="text-xs font-medium text-neutral-300">
+                          Add prayer to <span className="text-amber-400 font-semibold">{activeItem.subject.name}</span>:
+                        </div>
+                        <input
+                          type="text"
+                          value={newPrayerText}
+                          onChange={(e) => setNewPrayerText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleConfirmAddNewPrayer();
+                            if (e.key === 'Escape') {
+                              setIsAddingNewPrayer(false);
+                              setNewPrayerText('');
+                            }
+                          }}
+                          placeholder={`Type prayer or person's name for ${activeItem.subject.name}...`}
+                          autoFocus
+                          className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-sm font-serif text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-amber-500"
+                        />
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAddingNewPrayer(false);
+                              setNewPrayerText('');
+                            }}
+                            className="px-3 py-1.5 text-neutral-400 hover:text-white text-xs transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleConfirmAddNewPrayer}
+                            disabled={!newPrayerText.trim()}
+                            className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-neutral-950 text-xs font-semibold rounded-lg transition-colors"
+                          >
+                            Add Prayer
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingNewPrayer(true);
+                          setNewPrayerText('');
+                        }}
+                        className="w-full py-2.5 px-3 rounded-xl border border-dashed border-neutral-800 hover:border-neutral-700 bg-neutral-950/40 hover:bg-neutral-900/60 text-xs text-neutral-400 hover:text-neutral-200 flex items-center justify-center gap-1.5 transition-all group active:scale-98"
+                      >
+                        <Plus className="w-3.5 h-3.5 text-neutral-500 group-hover:text-amber-400 transition-colors" />
+                        <span>Add prayer to {activeItem.subject.name}</span>
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

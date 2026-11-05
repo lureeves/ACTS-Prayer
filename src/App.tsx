@@ -16,6 +16,13 @@ import {
 import { PrayerData, AppSettings, PrayerCard, PrayerSubject, PrayerCategory, ScheduleCadenceType, EveryNWeeksSchedule, TopicPriority } from './types/prayer';
 import { loadPrayerData, savePrayerData, loadSettings, saveSettings, isTauriEnvironment } from './services/storage';
 import { generateSessionPlan, syncDailyRotation, getLocalDateString } from './services/scheduler';
+import { 
+  sanitizeThreadUpdates, 
+  moveCardsToArchive, 
+  addNewCard, 
+  addCardUpdate, 
+  unarchiveCard 
+} from './services/prayerOperations';
 import { GuidedSessionModal } from './components/GuidedSessionModal';
 import { SettingsModal } from './components/SettingsModal';
 import { QuickCaptureModal } from './components/QuickCaptureModal';
@@ -23,215 +30,6 @@ import { SupplicationTree } from './components/SupplicationTree';
 import { CategoryCardsView } from './components/CategoryCardsView';
 import { ArchiveToThanksgivingModal } from './components/ArchiveToThanksgivingModal';
 import { DEFAULT_PRAYER_DATA } from './data/defaultData';
-
-function sanitizeThreadUpdates(categories: PrayerCategory[]): PrayerCategory[] {
-  const cardsToMoveToArchive: { subjectName: string; originalCategory: string; card: PrayerCard }[] = [];
-
-  const cleanedCategories = categories.map(cat => {
-    if (cat.name.toLowerCase() === 'archive') return cat;
-
-    return {
-      ...cat,
-      subjects: cat.subjects.map(sub => {
-        const remainingCards: PrayerCard[] = [];
-        const groups: Record<string, PrayerCard[]> = {};
-
-        sub.cards.forEach(card => {
-          if (card.userArchived) {
-            let rootTitle: string | undefined = undefined;
-            const key = card.stackGroup || card.threadId;
-            if (key) {
-              const root = sub.cards.find(c => (c.stackGroup === key || c.threadId === key) && c !== card);
-              if (root) rootTitle = root.text;
-            }
-
-            cardsToMoveToArchive.push({
-              subjectName: sub.name,
-              originalCategory: cat.name,
-              card: {
-                ...card,
-                archived: true,
-                originalCategory: cat.name,
-                originalSubject: sub.name,
-                originalTopic: rootTitle || card.originalTopic
-              }
-            });
-          } else {
-            remainingCards.push(card);
-            const key = card.stackGroup || card.threadId;
-            if (key) {
-              if (!groups[key]) groups[key] = [];
-              groups[key].push(card);
-            }
-          }
-        });
-
-        const rootCards = new Set<string>();
-        const unarchiveCards = new Set<string>();
-
-        Object.values(groups).forEach(g => {
-          if (g.length > 1) {
-            g.sort((a, b) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime());
-            // Root topic container: kept archived so the bare name isn't an active prayer card
-            rootCards.add(g[0].createdDate + g[0].text);
-            // All updates: keep active unless the user explicitly archived them!
-            for (let i = 1; i < g.length; i++) {
-              if (!g[i].userArchived) {
-                unarchiveCards.add(g[i].createdDate + g[i].text);
-              }
-            }
-          }
-        });
-
-        const updatedCards = remainingCards.map(c => {
-          const id = c.createdDate + c.text;
-          if (rootCards.has(id)) {
-            return { ...c, archived: true };
-          }
-          if (unarchiveCards.has(id)) {
-            return { ...c, archived: false, archivedDate: undefined };
-          }
-          return c;
-        });
-
-        return { ...sub, cards: updatedCards };
-      })
-    };
-  });
-
-  // Automatically move any previously user-archived cards to Archive category
-  if (cardsToMoveToArchive.length > 0) {
-    let archiveCat = cleanedCategories.find(c => c.name.toLowerCase() === 'archive');
-    if (!archiveCat) {
-      archiveCat = {
-        name: 'Archive',
-        ordering: 999,
-        createdDate: new Date().toISOString(),
-        subjects: []
-      };
-      cleanedCategories.push(archiveCat);
-    }
-
-    cardsToMoveToArchive.forEach(({ subjectName, card }) => {
-      let archiveSub = archiveCat!.subjects.find(s => s.name.trim().toLowerCase() === subjectName.trim().toLowerCase());
-      if (!archiveSub) {
-        archiveSub = {
-          name: subjectName,
-          ordering: archiveCat!.subjects.length,
-          createdDate: new Date().toISOString(),
-          cards: []
-        };
-        archiveCat!.subjects.push(archiveSub);
-      }
-      if (!archiveSub.cards.some(c => c.createdDate === card.createdDate && c.text === card.text)) {
-        archiveSub.cards.unshift(card);
-      }
-    });
-  }
-
-  return cleanedCategories;
-}
-
-function moveCardsToArchive(
-  categories: PrayerCategory[],
-  subjectName: string,
-  card: PrayerCard
-): { updatedCategories: PrayerCategory[]; archivedCards: PrayerCard[] } {
-  const nowIso = new Date().toISOString();
-  const key = card.stackGroup || card.threadId;
-  const norm = (str?: string) => (str || '').trim().toLowerCase().replace(/[\u2018\u2019']/g, "'");
-  const normTargetSubject = norm(subjectName);
-
-  // Find if this card is the root card of a multi-card thread
-  let isRootOfThread = false;
-  let rootCardTitle: string | undefined = undefined;
-
-  for (const cat of categories) {
-    if (cat.name.toLowerCase() === 'archive') continue;
-    const sub = cat.subjects.find(s => norm(s.name) === normTargetSubject);
-    if (sub && key) {
-      const threadCards = sub.cards.filter(c => (c.stackGroup === key || c.threadId === key));
-      if (threadCards.length > 1) {
-        threadCards.sort((a, b) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime());
-        if (threadCards[0].createdDate === card.createdDate && threadCards[0].text.trim() === card.text.trim()) {
-          isRootOfThread = true;
-        } else {
-          rootCardTitle = threadCards[0].text;
-        }
-      }
-      break;
-    }
-  }
-
-  const cardsToArchive: PrayerCard[] = [];
-
-  const updatedCategories = categories.map(cat => {
-    // Never extract cards from Archive category
-    if (cat.name.toLowerCase() === 'archive') return cat;
-
-    const updatedSubjects = cat.subjects.map(sub => {
-      if (norm(sub.name) === normTargetSubject) {
-        const remainingCards: PrayerCard[] = [];
-        sub.cards.forEach(c => {
-          const isTargetCard = (c.createdDate === card.createdDate && c.text.trim() === card.text.trim()) || 
-                               (c.createdDate === card.createdDate);
-          const isThreadCard = isRootOfThread && key && (c.stackGroup === key || c.threadId === key);
-
-          if (isTargetCard || isThreadCard) {
-            cardsToArchive.push({
-              ...c,
-              archived: true,
-              userArchived: true,
-              archivedDate: nowIso,
-              originalCategory: cat.name,
-              originalSubject: sub.name,
-              originalTopic: (!isRootOfThread && rootCardTitle) ? rootCardTitle : (c.originalTopic || undefined)
-            });
-          } else {
-            remainingCards.push(c);
-          }
-        });
-        return { ...sub, cards: remainingCards };
-      }
-      return sub;
-    });
-    return { ...cat, subjects: updatedSubjects };
-  });
-
-  // Target Archive Category
-  let archiveCat = updatedCategories.find(c => c.name.toLowerCase() === 'archive');
-  if (!archiveCat) {
-    archiveCat = {
-      name: 'Archive',
-      ordering: 999,
-      createdDate: nowIso,
-      visible: true,
-      subjects: []
-    };
-    updatedCategories.push(archiveCat);
-  }
-  archiveCat.visible = true;
-
-  let archiveSub = archiveCat.subjects.find(s => norm(s.name) === normTargetSubject);
-  if (!archiveSub) {
-    archiveSub = {
-      name: subjectName,
-      ordering: archiveCat.subjects.length,
-      createdDate: nowIso,
-      cards: []
-    };
-    archiveCat.subjects.push(archiveSub);
-  }
-
-  // Prepend newly archived cards into the Archive subject
-  cardsToArchive.forEach(c => {
-    if (!archiveSub!.cards.some(existing => existing.createdDate === c.createdDate && existing.text.trim() === c.text.trim())) {
-      archiveSub!.cards.unshift(c);
-    }
-  });
-
-  return { updatedCategories, archivedCards: cardsToArchive };
-}
 
 export function App() {
   const [prayerData, setPrayerData] = useState<PrayerData | null>(null);
@@ -535,80 +333,22 @@ export function App() {
   };
 
   // Add new card to a subject
-  const handleAddNewCard = (subjectName: string, text: string) => {
-    const nowIso = new Date().toISOString();
-    const newCard: PrayerCard = {
-      text,
-      ordering: 0,
-      createdDate: nowIso,
-      archived: false,
-      seenCount: 0,
-      isMarkdown: false
-    };
-
-    const updatedCategories = prayerData.Categories.map(cat => {
-      const updatedSubjects = cat.subjects.map(sub => {
-        if (sub.name === subjectName) {
-          return {
-            ...sub,
-            cards: [newCard, ...sub.cards]
-          };
-        }
-        return sub;
-      });
-      return { ...cat, subjects: updatedSubjects };
-    });
-
-    persistState({ ...prayerData, Categories: updatedCategories });
+  const handleAddNewCard = (subjectName: string, text: string): PrayerCard | null => {
+    if (!prayerData) return null;
+    const { updatedCategories, newCard } = addNewCard(prayerData.Categories, subjectName, text);
+    if (newCard) {
+      persistState({ ...prayerData, Categories: updatedCategories });
+    }
+    return newCard;
   };
 
   // Add thread update card to a stack
   const handleAddCardUpdate = (subjectName: string, parentCard: PrayerCard, newText: string): PrayerCard | null => {
-    if (!prayerData || !newText.trim()) return null;
-    const nowIso = new Date().toISOString();
-    const stackGroupId = parentCard.stackGroup || crypto.randomUUID();
-    const threadId = parentCard.threadId || crypto.randomUUID();
-
-    const newCard: PrayerCard = {
-      text: newText.trim(),
-      ordering: (parentCard.ordering || 0) + 1,
-      createdDate: nowIso,
-      stackGroup: stackGroupId,
-      threadId,
-      archived: false,
-      seenCount: 0,
-      isMarkdown: false
-    };
-
-    const norm = (str?: string) => (str || '').trim().toLowerCase().replace(/[\u2018\u2019']/g, "'");
-    const targetNormalized = norm(subjectName);
-
-    const updatedCategories = prayerData.Categories.map(cat => {
-      const updatedSubjects = cat.subjects.map(sub => {
-        if (norm(sub.name) === targetNormalized) {
-          // If parent wasn't grouped yet, group it and set archived: true (becomes root container)
-          const updatedCards = sub.cards.map(c => {
-            if (c.createdDate === parentCard.createdDate) {
-              return {
-                ...c,
-                stackGroup: stackGroupId,
-                threadId,
-                archived: true
-              };
-            }
-            return c;
-          });
-          return {
-            ...sub,
-            cards: [...updatedCards, newCard]
-          };
-        }
-        return sub;
-      });
-      return { ...cat, subjects: updatedSubjects };
-    });
-
-    persistState({ ...prayerData, Categories: updatedCategories });
+    if (!prayerData) return null;
+    const { updatedCategories, newCard } = addCardUpdate(prayerData.Categories, subjectName, parentCard, newText);
+    if (newCard) {
+      persistState({ ...prayerData, Categories: updatedCategories });
+    }
     return newCard;
   };
 
@@ -644,65 +384,7 @@ export function App() {
   // Restore / Unarchive Card from Archive category back to active category & subject
   const handleUnarchiveCard = (subjectName: string, card: PrayerCard) => {
     if (!prayerData) return;
-    const nowIso = new Date().toISOString();
-    const norm = (str?: string) => (str || '').trim().toLowerCase().replace(/[\u2018\u2019']/g, "'");
-
-    const targetCategoryName = card.originalCategory || 'Supplication';
-    const targetSubjectName = card.originalSubject || subjectName;
-
-    // 1. Remove card from Archive category
-    const updatedCategories = prayerData.Categories.map(cat => {
-      if (cat.name.toLowerCase() === 'archive') {
-        return {
-          ...cat,
-          subjects: cat.subjects.map(sub => {
-            if (norm(sub.name) === norm(subjectName)) {
-              return {
-                ...sub,
-                cards: sub.cards.filter(c => !(c.createdDate === card.createdDate && c.text.trim() === card.text.trim()))
-              };
-            }
-            return sub;
-          })
-        };
-      }
-      return cat;
-    });
-
-    // 2. Restore card to target category and subject
-    const restoredCard: PrayerCard = {
-      ...card,
-      archived: false,
-      userArchived: false,
-      archivedDate: undefined
-    };
-
-    let targetCat = updatedCategories.find(c => c.name.trim().toLowerCase() === targetCategoryName.trim().toLowerCase());
-    if (!targetCat) {
-      targetCat = {
-        name: targetCategoryName,
-        ordering: updatedCategories.length,
-        createdDate: nowIso,
-        visible: true,
-        subjects: []
-      };
-      updatedCategories.push(targetCat);
-    }
-
-    let targetSub = targetCat.subjects.find(s => norm(s.name) === norm(targetSubjectName));
-    if (!targetSub) {
-      targetSub = {
-        name: targetSubjectName,
-        ordering: targetCat.subjects.length,
-        createdDate: nowIso,
-        cards: []
-      };
-      targetCat.subjects.push(targetSub);
-    }
-
-    // Add back into subject
-    targetSub.cards.unshift(restoredCard);
-
+    const { updatedCategories } = unarchiveCard(prayerData.Categories, subjectName, card);
     persistState({ ...prayerData, Categories: updatedCategories });
   };
 
@@ -1042,6 +724,7 @@ export function App() {
         onEditCardText={handleEditCardText}
         onAddCardUpdate={handleAddCardUpdate}
         onArchiveCard={handleArchiveRequest}
+        onAddNewCard={handleAddNewCard}
       />
 
       {/* Preferences & Storage Modal */}

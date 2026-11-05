@@ -12,14 +12,12 @@ import {
   ArrowUp,
   ArrowDown,
   Plus,
-  Archive,
-  Layers
+  Archive
 } from 'lucide-react';
-import { ACTSStage, ACTS_STAGES, PrayerCard, PrayerSubject } from '../types/prayer';
-import { ActiveSessionItem, selectSubjectSessionCards } from '../services/scheduler';
+import { ACTSStage, ACTS_STAGES, PrayerCard } from '../types/prayer';
+import { ActiveSessionItem } from '../services/scheduler';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { TimerBar } from './TimerBar';
-import { BatchPrayersModal } from './BatchPrayersModal';
 
 interface GuidedSessionModalProps {
   isOpen: boolean;
@@ -33,15 +31,6 @@ interface GuidedSessionModalProps {
   onAddCardUpdate?: (subjectName: string, parentCard: PrayerCard, newText: string) => PrayerCard | null;
   onArchiveCard?: (subjectName: string, card: PrayerCard) => void;
   onAddNewCard?: (subjectName: string, text: string) => PrayerCard | null;
-  onUpdateTopicBatch?: (
-    categoryName: string,
-    subjectName: string,
-    config: {
-      sessionCardLimit?: number;
-      cardSelectionMode?: 'sequential' | 'random';
-      cardRotationOffset?: number;
-    }
-  ) => void;
 }
 
 const STAGE_THEMES: Record<ACTSStage, {
@@ -191,8 +180,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   onEditCardText,
   onAddCardUpdate,
   onArchiveCard,
-  onAddNewCard,
-  onUpdateTopicBatch
+  onAddNewCard
 }) => {
   const [currentStageIndex, setCurrentStageIndex] = useState<number>(0);
   const [currentTopicIndex, setCurrentTopicIndex] = useState<number>(0);
@@ -202,7 +190,6 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   const [newSubPrayerText, setNewSubPrayerText] = useState<string>('');
   const [isAddingNewPrayer, setIsAddingNewPrayer] = useState<boolean>(false);
   const [newPrayerText, setNewPrayerText] = useState<string>('');
-  const [isBatchModalOpen, setIsBatchModalOpen] = useState<boolean>(false);
   const prevIsOpenRef = useRef<boolean>(false);
 
   // Lock background body scroll to eliminate outer page scrollbars
@@ -324,19 +311,20 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
     if (!isOpen || completed) return;
 
     const handleWheel = (e: WheelEvent) => {
-      // If predominantly vertical scroll, let user scroll the cards list
-      if (Math.abs(e.deltaY) > Math.abs(e.deltaX) * 1.4) {
+      const now = Date.now();
+      // Lock for 850ms after a successful page turn to fully drain trackpad momentum
+      if (now - lastWheelTriggerRef.current < 850) {
+        wheelAccumulatorRef.current = 0;
+        return;
+      }
+
+      // If vertical scroll is significant or dominant, let user scroll the cards list smoothly
+      if (Math.abs(e.deltaY) * 1.5 > Math.abs(e.deltaX)) {
         return;
       }
 
       // Filter out micro-movements
-      if (Math.abs(e.deltaX) < 6) return;
-
-      const now = Date.now();
-      // Lock for 500ms after a successful page turn so 1 gesture = 1 page
-      if (now - lastWheelTriggerRef.current < 500) {
-        return;
-      }
+      if (Math.abs(e.deltaX) < 10) return;
 
       wheelAccumulatorRef.current += e.deltaX;
 
@@ -345,9 +333,9 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
       }
       wheelResetTimeoutRef.current = window.setTimeout(() => {
         wheelAccumulatorRef.current = 0;
-      }, 180);
+      }, 150);
 
-      const SWIPE_THRESHOLD = 45;
+      const SWIPE_THRESHOLD = 95;
 
       if (wheelAccumulatorRef.current > SWIPE_THRESHOLD) {
         // Swiped left with 2 fingers -> Advance to next page
@@ -373,6 +361,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
   // 3. Touchscreen Swipe (Touchstart / Touchend on Mobile / iOS / iPad)
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const lastTouchTriggerRef = useRef<number>(0);
 
   useEffect(() => {
     if (!isOpen || completed) return;
@@ -394,12 +383,18 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
       const diffX = changedTouch.clientX - touchStartRef.current.x;
       const diffY = changedTouch.clientY - touchStartRef.current.y;
-      const elapsed = Date.now() - touchStartRef.current.time;
+      const now = Date.now();
+      const elapsed = now - touchStartRef.current.time;
 
       touchStartRef.current = null;
 
-      // Swipe gesture: within 600ms, predominantly horizontal, greater than 40px
-      if (elapsed < 600 && Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.4) {
+      if (now - lastTouchTriggerRef.current < 600) {
+        return;
+      }
+
+      // Swipe gesture: within 500ms, strictly horizontal, distance greater than 75px
+      if (elapsed < 500 && Math.abs(diffX) > 75 && Math.abs(diffX) > Math.abs(diffY) * 1.6) {
+        lastTouchTriggerRef.current = now;
         if (diffX < 0) {
           // Swiped left -> Advance to next page
           handleNextRef.current();
@@ -573,46 +568,6 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
     setIsAddingNewPrayer(false);
     setNewPrayerText('');
-  };
-
-  // Handle saving batch configuration during prayer session
-  const handleSaveBatchInSession = (
-    subjectName: string,
-    config: {
-      sessionCardLimit?: number;
-      cardSelectionMode?: 'sequential' | 'random';
-      cardRotationOffset?: number;
-    }
-  ) => {
-    if (!activeItem) return;
-    const updatedSubject: PrayerSubject = {
-      ...activeItem.subject,
-      sessionCardLimit: config.sessionCardLimit,
-      cardSelectionMode: config.cardSelectionMode,
-      cardRotationOffset: config.cardRotationOffset
-    };
-    if (!config.sessionCardLimit) {
-      delete updatedSubject.sessionCardLimit;
-      delete updatedSubject.cardSelectionMode;
-    }
-
-    const updatedActiveCards = selectSubjectSessionCards(updatedSubject);
-
-    const updatedItem: ActiveSessionItem = {
-      ...activeItem,
-      cards: updatedActiveCards,
-      subject: updatedSubject
-    };
-
-    const updatedStageTopics = [...stageTopics];
-    updatedStageTopics[currentTopicIndex] = updatedItem;
-
-    setActivePlan({
-      ...activePlan,
-      [currentStage]: updatedStageTopics
-    });
-
-    onUpdateTopicBatch?.(activeItem.categoryName, subjectName, config);
   };
 
   // Handle archiving prayer card or sub-prayer
@@ -793,25 +748,6 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  {/* Batch Prayers Button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsBatchModalOpen(true)}
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-all flex items-center gap-1 cursor-pointer ${
-                      activeItem.subject.sessionCardLimit && activeItem.subject.sessionCardLimit > 0
-                        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 hover:bg-indigo-500/30 font-medium'
-                        : 'bg-neutral-800 text-neutral-400 border-neutral-700/60 hover:text-neutral-200 hover:border-neutral-600'
-                    }`}
-                    title="Configure batch cards for this topic (default 5, sequential or random)"
-                  >
-                    <Layers className="w-2.5 h-2.5 text-indigo-400" />
-                    <span>
-                      {activeItem.subject.sessionCardLimit && activeItem.subject.sessionCardLimit > 0
-                        ? `Batch: ${activeItem.subject.sessionCardLimit} (${activeItem.subject.cardSelectionMode === 'random' ? 'Rand' : 'Seq'})`
-                        : 'Batch'}
-                    </span>
-                  </button>
-
                   {activeItem.cards.length > 0 ? (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700/60">
                       {activeItem.cards.length} {currentStage === 'Adoration' 
@@ -861,7 +797,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
                     // Cards with sub-information / updates (e.g. Person with multiple requests in a horizontal tree chart)
                     if (group.rootTitle && group.cards.length > 0) {
-                      const cardCount = group.cards.length;
+                      const allSubCards = group.cards;
+                      const totalRows = isAddingSubHere ? allSubCards.length + 1 : allSubCards.length;
 
                       return (
                         <div
@@ -870,8 +807,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                         >
                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0">
                             {/* LEFT NODE: Person Name & Action Buttons */}
-                            <div className="w-full sm:w-36 md:w-48 shrink-0 relative flex sm:flex-col justify-between sm:justify-center pr-3 py-1">
-                              <div className="min-w-0 pr-1">
+                            <div className="w-full sm:w-36 md:w-44 shrink-0 relative flex items-center pr-0 py-1">
+                              <div className="relative group/name shrink-0 max-w-[calc(100%-12px)]">
                                 <InlineEditableText
                                   value={group.rootTitle}
                                   onSave={(newVal) => {
@@ -881,92 +818,110 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                   }}
                                   className="text-sm sm:text-base font-serif text-neutral-100 font-semibold leading-snug tracking-tight"
                                 />
-                              </div>
 
-                              {/* Action buttons on hover: + Sub-prayer & Archive */}
-                              <div className="flex items-center gap-1.5 sm:mt-2 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setAddingSubPrayerId(isAddingSubHere ? null : groupIdentifier);
-                                    setNewSubPrayerText('');
-                                  }}
-                                  title="Add sub-prayer for this person"
-                                  className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
-                                >
-                                  <Plus className="w-3 h-3 text-amber-400" />
-                                  <span>Sub-prayer</span>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (group.rootCard) handleArchive(group.rootCard);
-                                  }}
-                                  title="Archive this person & all requests"
-                                  className="px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95"
-                                >
-                                  <Archive className="w-3 h-3 text-neutral-400" />
-                                  <span>Archive</span>
-                                </button>
-                              </div>
-
-                              {/* Horizontal connector line extending rightward to the tree rail */}
-                              <div className="hidden sm:block absolute -right-[1px] top-1/2 -translate-y-1/2 w-3 sm:w-4 h-[1.5px] bg-neutral-700/80" />
-                            </div>
-
-                            {/* RIGHT SIDE: Horizontal tree chart branching to each prayer request */}
-                            <div className="relative flex-1 min-w-0 sm:pl-5 md:pl-7 space-y-2 py-0.5">
-                              {/* Continuous vertical trunk connecting branches when > 1 card */}
-                              {cardCount > 1 && (
-                                <div className="hidden sm:block absolute left-0 top-[20px] bottom-[20px] w-[1.5px] bg-neutral-700/80" />
-                              )}
-
-                              {group.cards.map((card, cIdx) => (
-                                <div
-                                  key={card.createdDate + cIdx}
-                                  className="group/sub relative flex items-center"
-                                >
-                                  {/* Horizontal branch line turning into this request card */}
-                                  <div className="hidden sm:block absolute -left-5 md:-left-7 top-1/2 -translate-y-1/2 w-5 md:w-7 h-[1.5px] bg-neutral-700/80" />
-
-                                  {/* Small subtle branch node dot */}
-                                  <div className="hidden sm:block absolute -left-5 md:-left-7 top-1/2 -translate-y-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-neutral-500 border border-neutral-800" />
-
-                                  {/* The Prayer Request Card */}
-                                  <div className="w-full px-3 py-2 sm:py-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800/70 flex items-start justify-between gap-3 transition-colors hover:border-neutral-700/80">
-                                    <div className="flex-1 min-w-0 text-sm sm:text-base font-serif text-neutral-200 leading-relaxed font-normal">
-                                      <InlineEditableText
-                                        value={card.text}
-                                        onSave={(newVal) => handleCardTextEdited(card, newVal)}
-                                        isMarkdown={card.isMarkdown}
-                                      />
-                                    </div>
+                                {/* Action buttons on hover: positioned cleanly below name without offsetting the line */}
+                                <div className="h-0 relative">
+                                  <div className="absolute top-1.5 left-0 flex items-center gap-1.5 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20 whitespace-nowrap">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setAddingSubPrayerId(isAddingSubHere ? null : groupIdentifier);
+                                        setNewSubPrayerText('');
+                                      }}
+                                      title="Add sub-prayer for this person"
+                                      className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-md active:scale-95"
+                                    >
+                                      <Plus className="w-3 h-3 text-amber-400" />
+                                      <span>Sub-prayer</span>
+                                    </button>
 
                                     <button
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleArchive(card);
+                                        if (group.rootCard) handleArchive(group.rootCard);
                                       }}
-                                      title="Archive this sub-prayer"
-                                      className="opacity-0 group-hover/sub:opacity-100 transition-opacity duration-200 px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95 shrink-0"
+                                      title="Archive this person & all requests"
+                                      className="px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-md active:scale-95"
                                     >
                                       <Archive className="w-3 h-3 text-neutral-400" />
                                       <span>Archive</span>
                                     </button>
                                   </div>
                                 </div>
-                              ))}
+                              </div>
+
+                              {/* Horizontal connector line: starts immediately next to the person's name and stretches rightward */}
+                              <div className="hidden sm:block flex-1 h-[1.5px] bg-neutral-700/80 min-w-[8px]" />
+                            </div>
+
+                            {/* RIGHT SIDE: Horizontal tree chart branching to each prayer request */}
+                            <div className="relative flex-1 min-w-0 sm:pl-5 space-y-2 py-0.5">
+                              {allSubCards.map((card, cIdx) => {
+                                const isTop = cIdx === 0;
+                                const isBottom = cIdx === totalRows - 1;
+
+                                return (
+                                  <div
+                                    key={card.createdDate + cIdx}
+                                    className="group/sub relative flex items-center"
+                                  >
+                                    {/* Horizontal branch line directly into this request card */}
+                                    <div className="hidden sm:block absolute -left-5 top-1/2 -translate-y-1/2 w-5 h-[1.5px] bg-neutral-700/80" />
+
+                                    {/* Vertical rail connecting branches (only if > 1 card/row). NEVER extends above top card or below bottom card! */}
+                                    {totalRows > 1 && (
+                                      <>
+                                        {isTop && (
+                                          <div className="hidden sm:block absolute -left-5 top-1/2 -bottom-2 w-[1.5px] bg-neutral-700/80" />
+                                        )}
+                                        {isBottom && (
+                                          <div className="hidden sm:block absolute -left-5 -top-2 bottom-1/2 w-[1.5px] bg-neutral-700/80" />
+                                        )}
+                                        {!isTop && !isBottom && (
+                                          <div className="hidden sm:block absolute -left-5 -top-2 -bottom-2 w-[1.5px] bg-neutral-700/80" />
+                                        )}
+                                      </>
+                                    )}
+
+                                    {/* The Prayer Request Card */}
+                                    <div className="w-full px-3 py-2 sm:py-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800/70 flex items-start justify-between gap-3 transition-colors hover:border-neutral-700/80">
+                                      <div className="flex-1 min-w-0 text-sm sm:text-base font-serif text-neutral-200 leading-relaxed font-normal">
+                                        <InlineEditableText
+                                          value={card.text}
+                                          onSave={(newVal) => handleCardTextEdited(card, newVal)}
+                                          isMarkdown={card.isMarkdown}
+                                        />
+                                      </div>
+
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleArchive(card);
+                                        }}
+                                        title="Archive this sub-prayer"
+                                        className="opacity-0 group-hover/sub:opacity-100 transition-opacity duration-200 px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95 shrink-0"
+                                      >
+                                        <Archive className="w-3 h-3 text-neutral-400" />
+                                        <span>Archive</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
 
                               {/* Inline Sub-Prayer Input Box (when triggered) */}
                               {isAddingSubHere && (
                                 <div className="relative flex items-center animate-fadeIn pt-1">
                                   {/* Horizontal branch line connecting new input to tree */}
-                                  <div className="hidden sm:block absolute -left-5 md:-left-7 top-1/2 -translate-y-1/2 w-5 md:w-7 h-[1.5px] bg-amber-500/60" />
-                                  <div className="hidden sm:block absolute -left-5 md:-left-7 top-1/2 -translate-y-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                  <div className="hidden sm:block absolute -left-5 top-1/2 -translate-y-1/2 w-5 h-[1.5px] bg-amber-500/60" />
+
+                                  {/* Vertical line connecting from previous card to input center */}
+                                  {totalRows > 1 && (
+                                    <div className="hidden sm:block absolute -left-5 -top-2 bottom-1/2 w-[1.5px] bg-neutral-700/80" />
+                                  )}
 
                                   <div className="w-full p-2.5 rounded-lg bg-neutral-900/95 border border-amber-500/40 space-y-2 shadow-lg">
                                     <input
@@ -1208,14 +1163,6 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
           </div>
         )}
       </div>
-
-      {/* Batch Prayers Configuration Modal */}
-      <BatchPrayersModal
-        isOpen={isBatchModalOpen}
-        onClose={() => setIsBatchModalOpen(false)}
-        subject={activeItem?.subject || null}
-        onSaveBatch={handleSaveBatchInSession}
-      />
     </div>
   );
 };

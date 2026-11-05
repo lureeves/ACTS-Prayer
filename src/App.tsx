@@ -649,7 +649,6 @@ export function App() {
               onUnarchiveCard={handleUnarchiveCard}
               onAddNewCard={(sub, txt) => handleAddNewCard(sub, txt)}
               onAddNewTopic={(topicName) => handleAddNewTopic(activeCategory.name, topicName)}
-              onUpdateSchedule={(subName, sched) => handleUpdateTopicSchedule(activeCategory.name, subName, sched)}
             />
           )
         ) : (
@@ -703,9 +702,6 @@ export function App() {
         onAddCardUpdate={handleAddCardUpdate}
         onArchiveCard={handleArchiveRequest}
         onAddNewCard={handleAddNewCard}
-        onUpdateTopicBatch={(categoryName, subjectName, config) => {
-          handleUpdateTopicSchedule(categoryName, subjectName, config);
-        }}
       />
 
       {/* Preferences & Storage Modal */}

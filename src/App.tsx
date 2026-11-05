@@ -563,13 +563,14 @@ export function App() {
   };
 
   // Add thread update card to a stack
-  const handleAddCardUpdate = (subjectName: string, parentCard: PrayerCard, newText: string) => {
+  const handleAddCardUpdate = (subjectName: string, parentCard: PrayerCard, newText: string): PrayerCard | null => {
+    if (!prayerData || !newText.trim()) return null;
     const nowIso = new Date().toISOString();
     const stackGroupId = parentCard.stackGroup || crypto.randomUUID();
     const threadId = parentCard.threadId || crypto.randomUUID();
 
     const newCard: PrayerCard = {
-      text: newText,
+      text: newText.trim(),
       ordering: (parentCard.ordering || 0) + 1,
       createdDate: nowIso,
       stackGroup: stackGroupId,
@@ -579,16 +580,20 @@ export function App() {
       isMarkdown: false
     };
 
+    const norm = (str?: string) => (str || '').trim().toLowerCase().replace(/[\u2018\u2019']/g, "'");
+    const targetNormalized = norm(subjectName);
+
     const updatedCategories = prayerData.Categories.map(cat => {
       const updatedSubjects = cat.subjects.map(sub => {
-        if (sub.name === subjectName) {
-          // If parent wasn't grouped yet, group it without archiving older updates
+        if (norm(sub.name) === targetNormalized) {
+          // If parent wasn't grouped yet, group it and set archived: true (becomes root container)
           const updatedCards = sub.cards.map(c => {
             if (c.createdDate === parentCard.createdDate) {
               return {
                 ...c,
                 stackGroup: stackGroupId,
-                threadId
+                threadId,
+                archived: true
               };
             }
             return c;
@@ -601,6 +606,36 @@ export function App() {
         return sub;
       });
       return { ...cat, subjects: updatedSubjects };
+    });
+
+    persistState({ ...prayerData, Categories: updatedCategories });
+    return newCard;
+  };
+
+  // Edit prayer card or sub-prayer text inline
+  const handleEditCardText = (categoryName: string, subjectName: string, card: PrayerCard, newText: string) => {
+    if (!prayerData || !newText.trim()) return;
+    const norm = (str?: string) => (str || '').trim().toLowerCase().replace(/[\u2018\u2019']/g, "'");
+    const normCat = norm(categoryName);
+    const normSub = norm(subjectName);
+
+    const updatedCategories = prayerData.Categories.map(cat => {
+      if (norm(cat.name) === normCat) {
+        const updatedSubjects = cat.subjects.map(sub => {
+          if (norm(sub.name) === normSub) {
+            const updatedCards = sub.cards.map(c => {
+              if (c.createdDate === card.createdDate) {
+                return { ...c, text: newText.trim() };
+              }
+              return c;
+            });
+            return { ...sub, cards: updatedCards };
+          }
+          return sub;
+        });
+        return { ...cat, subjects: updatedSubjects };
+      }
+      return cat;
     });
 
     persistState({ ...prayerData, Categories: updatedCategories });
@@ -1004,6 +1039,8 @@ export function App() {
         autoStartTimer={settings.autoStartTimer}
         soundEnabled={settings.soundEnabled}
         onTopicPrayed={handleTopicPrayed}
+        onEditCardText={handleEditCardText}
+        onAddCardUpdate={handleAddCardUpdate}
       />
 
       {/* Preferences & Storage Modal */}

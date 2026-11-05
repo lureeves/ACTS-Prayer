@@ -1,19 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   ChevronRight, 
   ChevronLeft, 
-  ChevronDown,
   CheckCircle2, 
   Sparkles, 
   ShieldAlert, 
   Smile, 
   HandHeart, 
   Flame,
-  Layers,
-  History,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Plus
 } from 'lucide-react';
 import { ACTSStage, ACTS_STAGES, PrayerCard } from '../types/prayer';
 import { ActiveSessionItem } from '../services/scheduler';
@@ -28,6 +26,8 @@ interface GuidedSessionModalProps {
   autoStartTimer: boolean;
   soundEnabled: boolean;
   onTopicPrayed: (categoryName: string, subjectName: string, cards: PrayerCard[]) => void;
+  onEditCardText?: (categoryName: string, subjectName: string, card: PrayerCard, newText: string) => void;
+  onAddCardUpdate?: (subjectName: string, parentCard: PrayerCard, newText: string) => PrayerCard | null;
 }
 
 const STAGE_THEMES: Record<ACTSStage, {
@@ -77,6 +77,95 @@ const STAGE_THEMES: Record<ACTSStage, {
   }
 };
 
+/**
+ * Clean inline editable text component.
+ * Renders naturally; clicking immediately shows cursor in an auto-fitting textarea.
+ * Saves automatically on blur or Enter.
+ */
+interface InlineEditableTextProps {
+  value: string;
+  onSave: (newVal: string) => void;
+  className?: string;
+  inputClassName?: string;
+  placeholder?: string;
+  isMarkdown?: boolean;
+}
+
+const InlineEditableText: React.FC<InlineEditableTextProps> = ({
+  value,
+  onSave,
+  className = '',
+  inputClassName = '',
+  placeholder = 'Type text...',
+  isMarkdown = false
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [text, setText] = useState(value);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setText(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.max(28, textareaRef.current.scrollHeight)}px`;
+      textareaRef.current.focus();
+    }
+  }, [isEditing]);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (text.trim() && text !== value) {
+      onSave(text.trim());
+    } else {
+      setText(value);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      textareaRef.current?.blur();
+    } else if (e.key === 'Escape') {
+      setText(value);
+      setIsEditing(false);
+    }
+  };
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value);
+    e.target.style.height = 'auto';
+    e.target.style.height = `${Math.max(28, e.target.scrollHeight)}px`;
+  };
+
+  if (isEditing) {
+    return (
+      <textarea
+        ref={textareaRef}
+        value={text}
+        onChange={handleInput}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        rows={1}
+        className={`w-full bg-transparent border-b border-amber-500/70 focus:border-amber-400 focus:outline-none resize-none p-0 m-0 ${className} ${inputClassName}`}
+      />
+    );
+  }
+
+  return (
+    <div
+      onClick={() => setIsEditing(true)}
+      title="Click to edit"
+      className={`cursor-text transition-colors hover:text-white rounded ${className}`}
+    >
+      <MarkdownRenderer content={text} isMarkdown={isMarkdown} />
+    </div>
+  );
+};
+
 export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   isOpen,
   onClose,
@@ -84,13 +173,16 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   initialMinutes,
   autoStartTimer,
   soundEnabled,
-  onTopicPrayed
+  onTopicPrayed,
+  onEditCardText,
+  onAddCardUpdate
 }) => {
   const [currentStageIndex, setCurrentStageIndex] = useState<number>(0);
   const [currentTopicIndex, setCurrentTopicIndex] = useState<number>(0);
   const [completed, setCompleted] = useState<boolean>(false);
-  const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
   const [activePlan, setActivePlan] = useState<Record<ACTSStage, ActiveSessionItem[]>>(sessionPlan);
+  const [addingSubPrayerId, setAddingSubPrayerId] = useState<string | null>(null);
+  const [newSubPrayerText, setNewSubPrayerText] = useState<string>('');
 
   // Lock background body scroll to eliminate outer page scrollbars
   useEffect(() => {
@@ -111,8 +203,10 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
       setCurrentStageIndex(0);
       setCurrentTopicIndex(0);
       setCompleted(false);
+      setAddingSubPrayerId(null);
+      setNewSubPrayerText('');
     }
-  }, [isOpen]);
+  }, [isOpen, sessionPlan]);
 
   if (!isOpen) return null;
 
@@ -151,7 +245,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   };
 
   const groupSessionCards = (cards: PrayerCard[], allSubjectCards: PrayerCard[]) => {
-    const groups: Record<string, { rootTitle?: string; cards: PrayerCard[] }> = {};
+    const groups: Record<string, { rootTitle?: string; rootCard?: PrayerCard; cards: PrayerCard[] }> = {};
     const groupOrder: string[] = [];
 
     cards.forEach((card, idx) => {
@@ -164,6 +258,9 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
         if (threadAll.length > 1) {
           const sorted = [...threadAll].sort((a, b) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime());
           groups[key].rootTitle = sorted[0].text;
+          groups[key].rootCard = sorted[0];
+        } else {
+          groups[key].rootCard = card;
         }
       }
       groups[key].cards.push(card);
@@ -172,16 +269,132 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
     return groupOrder.map(key => ({
       groupId: key,
       rootTitle: groups[key].rootTitle,
+      rootCard: groups[key].rootCard,
       cards: groups[key].cards
     }));
   };
 
+  // Handle inline text editing for any card or root title
+  const handleCardTextEdited = (card: PrayerCard, newText: string) => {
+    if (!activeItem || !onEditCardText) return;
+    onEditCardText(activeItem.categoryName, activeItem.subject.name, card, newText);
+
+    // Update in local activePlan immediately
+    const updatedCards = activeItem.cards.map(c => {
+      if (c.createdDate === card.createdDate) {
+        return { ...c, text: newText };
+      }
+      return c;
+    });
+
+    const updatedSubjectCards = activeItem.subject.cards.map(c => {
+      if (c.createdDate === card.createdDate) {
+        return { ...c, text: newText };
+      }
+      return c;
+    });
+
+    const updatedItem: ActiveSessionItem = {
+      ...activeItem,
+      cards: updatedCards,
+      subject: {
+        ...activeItem.subject,
+        cards: updatedSubjectCards
+      }
+    };
+
+    const updatedStageTopics = [...stageTopics];
+    updatedStageTopics[currentTopicIndex] = updatedItem;
+
+    setActivePlan({
+      ...activePlan,
+      [currentStage]: updatedStageTopics
+    });
+  };
+
+  // Handle adding a sub-prayer for a person / card
+  const handleConfirmAddSubPrayer = (parentCard: PrayerCard) => {
+    if (!newSubPrayerText.trim() || !activeItem || !onAddCardUpdate) return;
+    const addedCard = onAddCardUpdate(activeItem.subject.name, parentCard, newSubPrayerText.trim());
+    if (!addedCard) return;
+
+    // Immediately reflect the new sub-prayer in local activePlan
+    const isParentGrouped = Boolean(parentCard.stackGroup);
+    let updatedActiveCards: PrayerCard[];
+
+    if (!isParentGrouped) {
+      // Parent was standalone, now it becomes root container and addedCard is the first active update
+      updatedActiveCards = activeItem.cards.map(c => {
+        if (c.createdDate === parentCard.createdDate) {
+          return addedCard;
+        }
+        return c;
+      });
+    } else {
+      updatedActiveCards = [...activeItem.cards, addedCard];
+    }
+
+    const updatedSubjectCards = [
+      ...activeItem.subject.cards.map(c => {
+        if (c.createdDate === parentCard.createdDate) {
+          return {
+            ...c,
+            stackGroup: addedCard.stackGroup,
+            threadId: addedCard.threadId,
+            archived: true
+          };
+        }
+        return c;
+      }),
+      addedCard
+    ];
+
+    const updatedItem: ActiveSessionItem = {
+      ...activeItem,
+      cards: updatedActiveCards,
+      subject: {
+        ...activeItem.subject,
+        cards: updatedSubjectCards
+      }
+    };
+
+    const updatedStageTopics = [...stageTopics];
+    updatedStageTopics[currentTopicIndex] = updatedItem;
+
+    setActivePlan({
+      ...activePlan,
+      [currentStage]: updatedStageTopics
+    });
+
+    setAddingSubPrayerId(null);
+    setNewSubPrayerText('');
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950 text-neutral-100 select-none overflow-hidden h-screen w-screen animate-fadeIn">
-      {/* Top Bar with Floating Timer & Close - Fixed Height, Never Scrolls */}
-      <div className="shrink-0 flex items-center justify-between px-4 sm:px-6 py-2.5 border-b border-neutral-900 bg-neutral-950/80 backdrop-blur-md">
-        {/* Stage Pills */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+      {/* Top Bar - Centered Clock Over Top & Stage Pills (Never Cut Off in Half Screen) */}
+      <div className="shrink-0 border-b border-neutral-900 bg-neutral-950/90 backdrop-blur-md px-4 sm:px-6 pt-2.5 pb-2">
+        {/* Row 1: The Centered Clock Over Top */}
+        <div className="relative flex items-center justify-center w-full min-h-[34px]">
+          {/* Centered Hoverable Clock */}
+          <TimerBar
+            initialMinutes={initialMinutes}
+            autoStart={autoStartTimer}
+            soundEnabled={soundEnabled}
+          />
+
+          {/* Close / Exit Button pinned to right */}
+          <button
+            onClick={onClose}
+            className="absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
+            title="Exit Session"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Row 2: Stage Pills Centered Below */}
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 mt-2 overflow-x-auto no-scrollbar py-0.5">
           {ACTS_STAGES.map((stg, idx) => {
             const isCurrent = idx === currentStageIndex;
             const isPast = idx < currentStageIndex;
@@ -189,13 +402,14 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
             const topicCount = (activePlan[stg] || []).length;
 
             return (
-              <div
+              <button
                 key={stg}
+                type="button"
                 onClick={() => {
                   setCurrentStageIndex(idx);
                   setCurrentTopicIndex(0);
                 }}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer transition-all ${
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all shrink-0 ${
                   isCurrent
                     ? `${stgTheme.badgeBg} ${stgTheme.color} border ${stgTheme.badgeBorder} ring-1 ring-white/10 font-semibold`
                     : isPast
@@ -210,26 +424,9 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                     ({topicCount})
                   </span>
                 )}
-              </div>
+              </button>
             );
           })}
-        </div>
-
-        {/* Non-intrusive Floating Timer Bar */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <TimerBar
-            initialMinutes={initialMinutes}
-            autoStart={autoStartTimer}
-            soundEnabled={soundEnabled}
-          />
-
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
-            title="Exit Session"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
       </div>
 
@@ -287,7 +484,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
               </p>
             </div>
 
-            {/* Prayer Topic Container - Scaled ~20% More Compact */}
+            {/* Prayer Topic Container */}
             <div className="flex-1 min-h-0 w-full flex flex-col bg-neutral-900/90 border border-neutral-800 rounded-2xl shadow-xl overflow-hidden relative backdrop-blur-sm p-4 sm:p-5">
               <div className={`absolute top-0 left-0 right-0 h-1 ${theme.accent}`} />
 
@@ -327,7 +524,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                 </div>
               </div>
 
-              {/* THE SINGLE SCROLLBAR FOR THE ENTIRE PAGE: Smoothly Scrolls Verses if they exceed view */}
+              {/* The Single Scrollbar for Verses / Cards */}
               <div className="flex-1 min-h-0 overflow-y-auto pr-1.5 space-y-2.5">
                 {activeItem.cards.length === 0 ? (
                   <div className="h-full min-h-[200px] flex flex-col items-center justify-center text-center p-6 space-y-3.5 my-auto">
@@ -347,36 +544,108 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                   </div>
                 ) : (
                   groupSessionCards(activeItem.cards, activeItem.subject?.cards || []).map((group) => {
+                    const groupIdentifier = group.groupId;
+                    const isAddingSubHere = addingSubPrayerId === groupIdentifier;
+
+                    // Cards with sub-information / updates
                     if (group.rootTitle && group.cards.length > 0) {
                       return (
                         <div
                           key={group.groupId}
-                          className="p-3.5 sm:p-4 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm space-y-2.5 transition-colors hover:border-neutral-700/80"
+                          className="group relative p-3.5 sm:p-4 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm space-y-2.5 transition-all hover:border-neutral-700/80"
                         >
-                          {/* Root Topic/Person Header on Top */}
-                          <div className="pb-2 border-b border-neutral-800/80 flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-bold text-sky-400">
-                                {group.rootTitle}
-                              </span>
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
-                                {group.cards.length} {group.cards.length === 1 ? 'active update' : 'active updates'}
-                              </span>
+                          {/* Person/Topic Header - Exactly same styling as other cards (NOT blue, NO "active update" badge) */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <InlineEditableText
+                                value={group.rootTitle}
+                                onSave={(newVal) => {
+                                  if (group.rootCard) {
+                                    handleCardTextEdited(group.rootCard, newVal);
+                                  }
+                                }}
+                                className="text-sm sm:text-base font-serif text-neutral-100 leading-relaxed font-medium"
+                              />
+                            </div>
+
+                            {/* Option to add sub prayer that appears on hover on the right side */}
+                            <div className="shrink-0 flex items-center">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAddingSubPrayerId(isAddingSubHere ? null : groupIdentifier);
+                                  setNewSubPrayerText('');
+                                }}
+                                title="Add sub-prayer for this person"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
+                              >
+                                <Plus className="w-3 h-3 text-amber-400" />
+                                <span>Sub-prayer</span>
+                              </button>
                             </div>
                           </div>
 
-                          {/* Active Updates under this Topic/Person - Never crossed out */}
-                          <div className="space-y-2">
+                          {/* Inline Sub-Prayer Input Box (when triggered) */}
+                          {isAddingSubHere && (
+                            <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-700/80 space-y-2 animate-fadeIn">
+                              <input
+                                type="text"
+                                value={newSubPrayerText}
+                                onChange={(e) => setNewSubPrayerText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    if (group.rootCard) handleConfirmAddSubPrayer(group.rootCard);
+                                  } else if (e.key === 'Escape') {
+                                    setAddingSubPrayerId(null);
+                                    setNewSubPrayerText('');
+                                  }
+                                }}
+                                placeholder={`Add sub-prayer for ${group.rootTitle}...`}
+                                autoFocus
+                                className="w-full px-3 py-1.5 bg-neutral-950 border border-neutral-700 rounded-lg text-xs font-serif text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-amber-500"
+                              />
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAddingSubPrayerId(null);
+                                    setNewSubPrayerText('');
+                                  }}
+                                  className="px-2.5 py-1 text-neutral-400 hover:text-white text-xs transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (group.rootCard) handleConfirmAddSubPrayer(group.rootCard);
+                                  }}
+                                  disabled={!newSubPrayerText.trim()}
+                                  className="px-3 py-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-neutral-950 text-xs font-semibold rounded-lg transition-colors"
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Sub-portion (Updates under this Topic/Person) - Clean dark styling */}
+                          <div className="space-y-2 pt-1 border-t border-neutral-800/60">
                             {group.cards.map((card, cIdx) => (
                               <div
                                 key={card.createdDate + cIdx}
-                                className="p-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800/70 space-y-1"
+                                className="p-2.5 sm:p-3 rounded-lg bg-neutral-900/60 border border-neutral-800/70 space-y-1 transition-colors hover:border-neutral-700/80"
                               >
-                                <div className="text-[10px] text-neutral-400 font-mono">
+                                <div className="text-[10px] text-neutral-500 font-mono">
                                   Update #{cIdx + 1} • {new Date(card.createdDate).toLocaleDateString()}
                                 </div>
-                                <div className="text-sm sm:text-base font-serif text-neutral-100 leading-relaxed font-medium">
-                                  <MarkdownRenderer content={card.text} isMarkdown={card.isMarkdown} />
+                                <div className="text-sm sm:text-base font-serif text-neutral-200 leading-relaxed font-normal">
+                                  <InlineEditableText
+                                    value={card.text}
+                                    onSave={(newVal) => handleCardTextEdited(card, newVal)}
+                                    isMarkdown={card.isMarkdown}
+                                  />
                                 </div>
                               </div>
                             ))}
@@ -386,19 +655,87 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                     }
 
                     // Standalone card(s)
-                    return group.cards.map((card, cIdx) => (
-                      <div
-                        key={card.createdDate + cIdx}
-                        className="p-3.5 sm:p-4 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm space-y-2 transition-colors hover:border-neutral-700/80"
-                      >
-                        <div className="text-sm sm:text-base font-serif text-neutral-100 leading-relaxed">
-                          <MarkdownRenderer
-                            content={card.text}
-                            isMarkdown={card.isMarkdown}
-                          />
+                    return group.cards.map((card, cIdx) => {
+                      const standaloneId = card.createdDate + cIdx;
+                      const isAddingStandaloneSub = addingSubPrayerId === standaloneId;
+
+                      return (
+                        <div
+                          key={standaloneId}
+                          className="group relative p-3.5 sm:p-4 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm space-y-2 transition-all hover:border-neutral-700/80"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <InlineEditableText
+                                value={card.text}
+                                onSave={(newVal) => handleCardTextEdited(card, newVal)}
+                                isMarkdown={card.isMarkdown}
+                                className="text-sm sm:text-base font-serif text-neutral-100 leading-relaxed"
+                              />
+                            </div>
+
+                            {/* Option to add sub prayer that appears on hover on the right side */}
+                            <div className="shrink-0 flex items-center">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAddingSubPrayerId(isAddingStandaloneSub ? null : standaloneId);
+                                  setNewSubPrayerText('');
+                                }}
+                                title="Add sub-prayer for this person"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
+                              >
+                                <Plus className="w-3 h-3 text-amber-400" />
+                                <span>Sub-prayer</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Inline Sub-Prayer Input Box for standalone card */}
+                          {isAddingStandaloneSub && (
+                            <div className="p-2.5 rounded-lg bg-neutral-900/90 border border-neutral-700/80 space-y-2 animate-fadeIn">
+                              <input
+                                type="text"
+                                value={newSubPrayerText}
+                                onChange={(e) => setNewSubPrayerText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleConfirmAddSubPrayer(card);
+                                  } else if (e.key === 'Escape') {
+                                    setAddingSubPrayerId(null);
+                                    setNewSubPrayerText('');
+                                  }
+                                }}
+                                placeholder="Add first sub-prayer update..."
+                                autoFocus
+                                className="w-full px-3 py-1.5 bg-neutral-950 border border-neutral-700 rounded-lg text-xs font-serif text-neutral-100 placeholder-neutral-500 focus:outline-none focus:border-amber-500"
+                              />
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAddingSubPrayerId(null);
+                                    setNewSubPrayerText('');
+                                  }}
+                                  className="px-2.5 py-1 text-neutral-400 hover:text-white text-xs transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleConfirmAddSubPrayer(card)}
+                                  disabled={!newSubPrayerText.trim()}
+                                  className="px-3 py-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-neutral-950 text-xs font-semibold rounded-lg transition-colors"
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ));
+                      );
+                    });
                   })
                 )}
               </div>

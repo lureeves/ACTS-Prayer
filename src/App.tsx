@@ -649,6 +649,7 @@ export function App() {
         {activeCategory ? (
           activeTab === 'Supplication' ? (
             <SupplicationTree
+              key={activeCategory.name}
               subjects={activeCategory.subjects}
               onArchiveCard={handleArchiveRequest}
               onUnarchiveCard={handleUnarchiveCard}

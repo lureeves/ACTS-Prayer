@@ -36,19 +36,8 @@ export const CategoryCardsView: React.FC<CategoryCardsViewProps> = ({
   const [confirmDeleteCardId, setConfirmDeleteCardId] = useState<string | null>(null);
   const [confirmDeleteSubjectName, setConfirmDeleteSubjectName] = useState<string | null>(null);
 
-  // Expand all subjects in Archive by default so users immediately see their archived items
-  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>(() => {
-    if (isArchiveCategory) {
-      const initial: Record<string, boolean> = {};
-      category.subjects.forEach(s => {
-        initial[s.name] = true;
-      });
-      return initial;
-    }
-    return {
-      [category.subjects[0]?.name || '']: true
-    };
-  });
+  // All topics start collapsed by default
+  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
   const [newCardInput, setNewCardInput] = useState<Record<string, string>>({});
   const [newTopicName, setNewTopicName] = useState<string>('');
 
@@ -81,9 +70,7 @@ export const CategoryCardsView: React.FC<CategoryCardsViewProps> = ({
   return (
     <div className="space-y-4">
       {visibleSubjects.map(subject => {
-        const isExpanded = isArchiveCategory 
-          ? expandedSubjects[subject.name] !== false 
-          : !!expandedSubjects[subject.name];
+        const isExpanded = !!expandedSubjects[subject.name];
         const displayCards = isArchiveCategory ? subject.cards : subject.cards.filter(c => !c.archived);
 
         return (

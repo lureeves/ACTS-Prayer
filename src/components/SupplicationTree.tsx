@@ -54,9 +54,7 @@ export const SupplicationTree: React.FC<SupplicationTreeProps> = ({
   onAddNewTopic,
   onUpdateSchedule
 }) => {
-  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({
-    [subjects[0]?.name || '']: true
-  });
+  const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>({});
   const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
   const [newCardInput, setNewCardInput] = useState<Record<string, string>>({});
   const [updateInput, setUpdateInput] = useState<{ [key: string]: string }>({});

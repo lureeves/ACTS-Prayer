@@ -403,3 +403,54 @@ export function unarchiveCard(
 
   return { updatedCategories, restoredCard };
 }
+
+/**
+ * Permanently deletes a card from the Archive category altogether.
+ */
+export function deleteArchivedCard(
+  categories: PrayerCategory[],
+  subjectName: string,
+  card: PrayerCard
+): { updatedCategories: PrayerCategory[] } {
+  const normArchiveSubject = normalizeName(subjectName);
+  const updatedCategories = categories.map(cat => {
+    if (cat.name.toLowerCase() === 'archive') {
+      return {
+        ...cat,
+        subjects: cat.subjects.map(sub => {
+          if (normalizeName(sub.name) === normArchiveSubject) {
+            return {
+              ...sub,
+              cards: sub.cards.filter(c => !(c.createdDate === card.createdDate && c.text.trim() === card.text.trim()))
+            };
+          }
+          return sub;
+        })
+      };
+    }
+    return cat;
+  });
+
+  return { updatedCategories };
+}
+
+/**
+ * Permanently deletes an entire subject / topic from the Archive category altogether.
+ */
+export function deleteArchivedSubject(
+  categories: PrayerCategory[],
+  subjectName: string
+): { updatedCategories: PrayerCategory[] } {
+  const normArchiveSubject = normalizeName(subjectName);
+  const updatedCategories = categories.map(cat => {
+    if (cat.name.toLowerCase() === 'archive') {
+      return {
+        ...cat,
+        subjects: cat.subjects.filter(sub => normalizeName(sub.name) !== normArchiveSubject)
+      };
+    }
+    return cat;
+  });
+
+  return { updatedCategories };
+}

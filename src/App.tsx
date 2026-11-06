@@ -21,7 +21,9 @@ import {
   moveCardsToArchive, 
   addNewCard, 
   addCardUpdate, 
-  unarchiveCard 
+  unarchiveCard,
+  deleteArchivedCard,
+  deleteArchivedSubject
 } from './services/prayerOperations';
 import { GuidedSessionModal } from './components/GuidedSessionModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -356,6 +358,20 @@ export function App() {
     persistState({ ...prayerData, Categories: updatedCategories });
   };
 
+  // Permanently delete a card from Archive category altogether
+  const handleDeleteArchivedCard = (subjectName: string, card: PrayerCard) => {
+    if (!prayerData) return;
+    const { updatedCategories } = deleteArchivedCard(prayerData.Categories, subjectName, card);
+    persistState({ ...prayerData, Categories: updatedCategories });
+  };
+
+  // Permanently delete an entire subject from Archive category altogether
+  const handleDeleteArchivedSubject = (subjectName: string) => {
+    if (!prayerData) return;
+    const { updatedCategories } = deleteArchivedSubject(prayerData.Categories, subjectName);
+    persistState({ ...prayerData, Categories: updatedCategories });
+  };
+
   // Add new topic / subject to a category
   const handleAddNewTopic = (categoryName: string, topicName: string) => {
     if (!topicName.trim() || !prayerData) return;
@@ -647,6 +663,8 @@ export function App() {
               category={activeCategory}
               onArchiveCard={handleArchiveRequest}
               onUnarchiveCard={handleUnarchiveCard}
+              onDeleteCard={handleDeleteArchivedCard}
+              onDeleteSubject={handleDeleteArchivedSubject}
               onAddNewCard={(sub, txt) => handleAddNewCard(sub, txt)}
               onAddNewTopic={(topicName) => handleAddNewTopic(activeCategory.name, topicName)}
             />

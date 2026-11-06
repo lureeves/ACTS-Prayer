@@ -10,6 +10,8 @@ import {
   addNewCard,
   addCardUpdate,
   unarchiveCard,
+  deleteArchivedCard,
+  deleteArchivedSubject,
   normalizeName
 } from '../src/services/prayerOperations.ts';
 
@@ -483,6 +485,50 @@ runTest('7.1 Realistic end-to-end flow: Add person -> Pray -> Add sub-prayer -> 
 
   const archiveMyGuysFinal = findSubject(findCategory(categories, 'Archive'), 'My Guys');
   assert.ok(!archiveMyGuysFinal.cards.some(c => c.createdDate === subPrayer1.createdDate && c.text === subPrayer1.text), 'Sub-prayer 1 removed from Archive');
+});
+
+console.log(`\n${CYAN}Suite 8: Permanently deleting from Archive altogether${RESET}`);
+
+runTest('8.1 Permanently deleting an individual card from Archive removes it completely', () => {
+  let categories = loadBackupData().Categories;
+  const myGuys = findSubject(findCategory(categories, 'Supplication'), 'My Guys');
+  const cardToArchive = myGuys.cards[0];
+  
+  // First archive it into Archive category
+  const archResult = moveCardsToArchive(categories, 'My Guys', cardToArchive);
+  categories = archResult.updatedCategories;
+
+  const archiveCat = findCategory(categories, 'Archive');
+  const targetSub = archiveCat.subjects.find(s => s.cards.length > 0);
+  assert.ok(targetSub, 'Archive should have a subject with cards');
+
+  const cardToDelete = targetSub.cards[0];
+  const originalCount = targetSub.cards.length;
+
+  const result = deleteArchivedCard(categories, targetSub.name, cardToDelete);
+  const updatedArchive = findCategory(result.updatedCategories, 'Archive');
+  const updatedSub = findSubject(updatedArchive, targetSub.name);
+
+  assert.equal(updatedSub.cards.length, originalCount - 1, 'Card count reduced by 1');
+  assert.ok(!updatedSub.cards.some(c => c.createdDate === cardToDelete.createdDate && c.text === cardToDelete.text), 'Card permanently deleted');
+});
+
+runTest('8.2 Permanently deleting an entire topic from Archive removes the topic and all its cards', () => {
+  let categories = loadBackupData().Categories;
+  const myGuys = findSubject(findCategory(categories, 'Supplication'), 'My Guys');
+  const cardToArchive = myGuys.cards[0];
+  
+  // First archive it into Archive category
+  const archResult = moveCardsToArchive(categories, 'My Guys', cardToArchive);
+  categories = archResult.updatedCategories;
+
+  const archiveCat = findCategory(categories, 'Archive');
+  const targetSub = archiveCat.subjects.find(s => s.cards.length > 0);
+  assert.ok(targetSub, 'Archive should have a subject to delete');
+
+  const result = deleteArchivedSubject(categories, targetSub.name);
+  const updatedArchive = findCategory(result.updatedCategories, 'Archive');
+  assert.ok(!updatedArchive.subjects.some(s => s.name === targetSub.name), 'Topic removed from Archive completely');
 });
 
 console.log(`\n${BOLD}${GREEN}====================================================${RESET}`);

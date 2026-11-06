@@ -7,7 +7,8 @@ import {
   Layers, 
   ChevronRight, 
   ChevronDown,
-  RotateCcw
+  RotateCcw,
+  Trash2
 } from 'lucide-react';
 import { PrayerCategory, PrayerSubject, PrayerCard } from '../types/prayer';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -16,6 +17,8 @@ interface CategoryCardsViewProps {
   category: PrayerCategory;
   onArchiveCard: (subjectName: string, card: PrayerCard) => void;
   onUnarchiveCard?: (subjectName: string, card: PrayerCard) => void;
+  onDeleteCard?: (subjectName: string, card: PrayerCard) => void;
+  onDeleteSubject?: (subjectName: string) => void;
   onAddNewCard: (subjectName: string, text: string) => void;
   onAddNewTopic?: (topicName: string) => void;
 }
@@ -24,10 +27,14 @@ export const CategoryCardsView: React.FC<CategoryCardsViewProps> = ({
   category,
   onArchiveCard,
   onUnarchiveCard,
+  onDeleteCard,
+  onDeleteSubject,
   onAddNewCard,
   onAddNewTopic
 }) => {
   const isArchiveCategory = category.name.toLowerCase() === 'archive';
+  const [confirmDeleteCardId, setConfirmDeleteCardId] = useState<string | null>(null);
+  const [confirmDeleteSubjectName, setConfirmDeleteSubjectName] = useState<string | null>(null);
 
   // Expand all subjects in Archive by default so users immediately see their archived items
   const [expandedSubjects, setExpandedSubjects] = useState<Record<string, boolean>>(() => {
@@ -105,9 +112,49 @@ export const CategoryCardsView: React.FC<CategoryCardsViewProps> = ({
                 </div>
               </div>
 
-              <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-300">
-                {displayCards.length} {isArchiveCategory ? 'archived' : 'active'}
-              </span>
+              <div className="flex items-center gap-2">
+                {isArchiveCategory && onDeleteSubject && (
+                  confirmDeleteSubjectName === subject.name ? (
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onDeleteSubject(subject.name);
+                          setConfirmDeleteSubjectName(null);
+                        }}
+                        className="px-2 py-0.5 text-[11px] rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-medium flex items-center gap-1 shadow-sm transition-all"
+                        title="Confirm permanently deleting this entire topic from archive"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Delete Topic</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteSubjectName(null)}
+                        className="px-1.5 py-0.5 text-[11px] rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteSubjectName(subject.name);
+                      }}
+                      title="Permanently delete this topic and all its cards from archive"
+                      className="p-1.5 rounded-lg hover:bg-rose-950/40 text-neutral-500 hover:text-rose-400 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )
+                )}
+
+                <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-300">
+                  {displayCards.length} {isArchiveCategory ? 'archived' : 'active'}
+                </span>
+              </div>
             </div>
 
             {/* Body */}
@@ -145,17 +192,55 @@ export const CategoryCardsView: React.FC<CategoryCardsViewProps> = ({
                       </div>
 
                       {isArchiveCategory ? (
-                        onUnarchiveCard && (
-                          <button
-                            type="button"
-                            onClick={() => onUnarchiveCard(subject.name, card)}
-                            title="Restore card back to active requests"
-                            className="px-2.5 py-1 text-xs rounded-lg bg-neutral-800 hover:bg-neutral-700 hover:text-sky-300 text-neutral-200 flex items-center gap-1.5 transition-all self-start border border-neutral-700/60"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5 text-neutral-400 group-hover:text-sky-300" />
-                            <span>Restore</span>
-                          </button>
-                        )
+                        <div className="flex items-center gap-2 self-start shrink-0">
+                          {onUnarchiveCard && (
+                            <button
+                              type="button"
+                              onClick={() => onUnarchiveCard(subject.name, card)}
+                              title="Restore card back to active requests"
+                              className="px-2.5 py-1 text-xs rounded-lg bg-neutral-800 hover:bg-neutral-700 hover:text-sky-300 text-neutral-200 flex items-center gap-1.5 transition-all border border-neutral-700/60"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5 text-neutral-400 group-hover:text-sky-300" />
+                              <span>Restore</span>
+                            </button>
+                          )}
+
+                          {onDeleteCard && (
+                            confirmDeleteCardId === (card.createdDate + idx) ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onDeleteCard(subject.name, card);
+                                    setConfirmDeleteCardId(null);
+                                  }}
+                                  title="Confirm permanently deleting this card"
+                                  className="px-2.5 py-1 text-xs rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-medium flex items-center gap-1 shadow-sm transition-all"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                  <span>Confirm Delete</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmDeleteCardId(null)}
+                                  className="px-2 py-1 text-xs rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-neutral-200 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteCardId(card.createdDate + idx)}
+                                title="Permanently delete this card altogether"
+                                className="px-2.5 py-1 text-xs rounded-lg bg-neutral-800 hover:bg-rose-950/40 hover:text-rose-400 hover:border-rose-800/60 text-neutral-400 flex items-center gap-1.5 transition-all border border-neutral-700/60"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-neutral-400 hover:text-rose-400" />
+                                <span>Delete</span>
+                              </button>
+                            )
+                          )}
+                        </div>
                       ) : (
                         <button
                           onClick={() => onArchiveCard(subject.name, card)}

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Clock, PlayCircle, FolderOpen, Download, Upload, Volume2, Save, Laptop, Globe, ListFilter, Cloud, Smartphone, CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Clock, PlayCircle, FolderOpen, Volume2, Save, Laptop, Globe, ListFilter, Cloud, Smartphone, CheckCircle2, CloudUpload, CloudDownload } from 'lucide-react';
 import { AppSettings, PrayerData } from '../types/prayer';
 import { exportPrayerDataAsJson, isTauriEnvironment } from '../services/storage';
 
@@ -28,6 +28,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [filePath, setFilePath] = useState(settings.filePath || currentFilePath);
   const [soundEnabled, setSoundEnabled] = useState(settings.soundEnabled);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isTauri = isTauriEnvironment();
 
   if (!isOpen) return null;
@@ -44,7 +45,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     onClose();
   };
 
-  const handleSelectFile = async () => {
+  const handleBrowseClick = async () => {
     if (isTauri) {
       try {
         const { open } = await import('@tauri-apps/plugin-dialog');
@@ -54,23 +55,89 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         });
         if (selected && typeof selected === 'string') {
           setFilePath(selected);
+          // Try to immediately load file contents for instant feedback
+          try {
+            const { readTextFile } = await import('@tauri-apps/plugin-fs');
+            const content = await readTextFile(selected);
+            const parsed = JSON.parse(content);
+            if (parsed.Categories) {
+              onImportData(parsed);
+              const displayName = selected.split('/').pop() || selected;
+              setImportStatus(`Loaded ${displayName} (${parsed.Metadata?.card_count || 0} cards)`);
+            }
+          } catch (e) {
+            console.warn('Could not read file preview immediately:', e);
+          }
         }
       } catch (err) {
         console.warn('File dialog error:', err);
       }
+    } else {
+      // In Web / PWA mode, open browser file picker
+      fileInputRef.current?.click();
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleWebFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFilePath(file.name);
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (parsed.Categories) {
           onImportData(parsed);
-          setImportStatus(`Successfully loaded ${parsed.Metadata?.card_count || ''} prayer cards!`);
+          setImportStatus(`Successfully loaded ${file.name} (${parsed.Metadata?.card_count || 0} cards)!`);
+        } else {
+          alert('Invalid prayer file format: missing Categories');
+        }
+      } catch (err) {
+        alert('Failed to parse JSON file');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleWebSaveToFile = async () => {
+    try {
+      if ('showSaveFilePicker' in window) {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: filePath || 'Backup_03-11-26_18-56.json',
+          types: [{
+            description: 'JSON Backup',
+            accept: { 'application/json': ['.json'] }
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(JSON.stringify(prayerData, null, 2));
+        await writable.close();
+        setFilePath(handle.name);
+        setImportStatus(`Successfully saved to ${handle.name}!`);
+        return;
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') return; // User cancelled
+      console.warn('File picker error:', err);
+    }
+
+    // Fallback: standard browser download
+    exportPrayerDataAsJson(prayerData, filePath || 'Backup_03-11-26_18-56.json');
+    setImportStatus(`Saved ${filePath || 'Backup_03-11-26_18-56.json'} to Downloads`);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFilePath(file.name);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (parsed.Categories) {
+          onImportData(parsed);
+          setImportStatus(`Successfully loaded ${file.name} (${parsed.Metadata?.card_count || 0} cards)!`);
           setTimeout(() => {
             onClose();
           }, 800);
@@ -229,12 +296,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 onClick={() => exportPrayerDataAsJson(prayerData, filePath || 'Backup_03-11-26_18-56.json')}
                 className="px-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700/80 text-neutral-200 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all active:scale-98"
               >
-                <Download className="w-3.5 h-3.5 text-sky-400" />
+                <CloudUpload className="w-3.5 h-3.5 text-sky-400" />
                 <span>Save to iCloud Drive</span>
               </button>
 
               <label className="px-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700/80 text-neutral-200 rounded-xl text-xs font-medium flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98">
-                <Upload className="w-3.5 h-3.5 text-amber-400" />
+                <CloudDownload className="w-3.5 h-3.5 text-amber-400" />
                 <span>Sync from iCloud Drive</span>
                 <input
                   type="file"
@@ -258,7 +325,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <label className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
               Active Storage Path
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <input
                 type="text"
                 value={filePath}
@@ -266,20 +333,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 placeholder="e.g. Backup_03-11-26_18-56.json"
                 className="flex-1 px-3 py-2 text-xs font-mono bg-neutral-800/80 border border-neutral-700 rounded-lg text-neutral-200 focus:outline-none focus:border-amber-500"
               />
-              {isTauri && (
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
-                  onClick={handleSelectFile}
-                  className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all"
+                  type="button"
+                  onClick={handleBrowseClick}
+                  className="flex-1 sm:flex-none px-3 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700/80 text-neutral-200 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
                   title="Browse local or iCloud Drive file"
                 >
-                  <FolderOpen className="w-3.5 h-3.5" /> Browse
+                  <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Browse</span>
                 </button>
-              )}
+
+                {!isTauri && (
+                  <button
+                    type="button"
+                    onClick={handleWebSaveToFile}
+                    className="flex-1 sm:flex-none px-3 py-2 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700/80 text-neutral-200 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                    title="Save JSON file to your device or iCloud Drive"
+                  >
+                    <Save className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Save As</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Hidden file input for web file browsing */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json,text/plain,*"
+                onChange={handleWebFileSelected}
+                className="hidden"
+              />
             </div>
             <p className="text-xs text-neutral-400">
               {isTauri 
                 ? 'All updates, prayed status, and additions instantly overwrite this local JSON file via Tauri native FS.'
-                : 'In web mode, changes persist to browser local storage and offline cache.'}
+                : 'In Web mode, use Browse to load your JSON file from disk or iCloud Drive, and Save As to export updates.'}
             </p>
           </div>
         </div>

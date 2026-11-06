@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { Play, Pause, RotateCcw, BellRing } from 'lucide-react';
 
 export interface TimerBarHandle {
@@ -60,12 +60,21 @@ export const TimerBar = forwardRef<TimerBarHandle, TimerBarProps>(({
   const intervalRef = useRef<number | null>(null);
   const chimePlayedRef = useRef<boolean>(false);
 
+  const toggleRunning = useCallback(() => {
+    if (secondsRemaining <= 0) {
+      setSecondsRemaining(initialMinutes * 60);
+      setIsFinished(false);
+      chimePlayedRef.current = false;
+      setIsRunning(true);
+      return;
+    }
+    setIsRunning(prev => !prev);
+  }, [secondsRemaining, initialMinutes]);
+
   useImperativeHandle(ref, () => ({
-    toggleRunning: () => {
-      setIsRunning(prev => !prev);
-    },
+    toggleRunning,
     isRunning
-  }), [isRunning]);
+  }), [toggleRunning, isRunning]);
 
   // Sync when initialMinutes changes
   useEffect(() => {
@@ -103,24 +112,20 @@ export const TimerBar = forwardRef<TimerBarHandle, TimerBarProps>(({
     };
   }, [isRunning, soundEnabled, onTimeUp]);
 
-  const toggleRunning = () => {
-    setIsRunning(!isRunning);
-  };
-
-  const resetTimer = () => {
+  const resetTimer = useCallback(() => {
     setIsRunning(false);
     setIsFinished(false);
     chimePlayedRef.current = false;
     setSecondsRemaining(initialMinutes * 60);
-  };
+  }, [initialMinutes]);
 
-  const addTime = (minutes: number) => {
+  const addTime = useCallback((minutes: number) => {
     setSecondsRemaining(prev => prev + minutes * 60);
     if (isFinished) {
       setIsFinished(false);
       chimePlayedRef.current = false;
     }
-  };
+  }, [isFinished]);
 
   const minutes = Math.floor(secondsRemaining / 60);
   const seconds = secondsRemaining % 60;
@@ -135,7 +140,7 @@ export const TimerBar = forwardRef<TimerBarHandle, TimerBarProps>(({
         type="button"
         onClick={toggleRunning}
         onDoubleClick={resetTimer}
-        title="Click to pause/play • Double-click to reset • Hover for options"
+        title="Click or press Space to pause/play • Double-click to reset • Hover for options"
         className="flex items-center gap-1.5 cursor-pointer focus:outline-none transition-transform duration-300 ease-out"
       >
         <span
@@ -151,11 +156,15 @@ export const TimerBar = forwardRef<TimerBarHandle, TimerBarProps>(({
         >
           {formattedTime}
         </span>
-        {isFinished && (
+        {isFinished ? (
           <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.2 bg-amber-500/20 text-amber-300 rounded-full font-medium">
             <BellRing className="w-2.5 h-2.5 animate-bounce" /> Time is up
           </span>
-        )}
+        ) : !isRunning ? (
+          <span className="text-[10px] font-mono px-1.5 py-0.2 bg-neutral-800/80 text-neutral-400 rounded-full font-medium">
+            paused
+          </span>
+        ) : null}
       </button>
 
       {/* Hidden options that smoothly reveal to the right on hover, sliding clock left while keeping the container centered */}
@@ -170,7 +179,7 @@ export const TimerBar = forwardRef<TimerBarHandle, TimerBarProps>(({
               e.stopPropagation();
               toggleRunning();
             }}
-            title={isRunning ? "Pause" : "Start"}
+            title={isRunning ? "Pause (Space)" : "Start (Space)"}
             className="p-1 rounded-full hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors active:scale-95"
           >
             {isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-current" />}

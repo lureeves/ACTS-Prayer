@@ -169,6 +169,14 @@ const InlineEditableText: React.FC<InlineEditableTextProps> = ({
   );
 };
 
+// Helper to identify Scripture verse cards vs attribute descriptions in Adoration
+const isScriptureCard = (card: PrayerCard): boolean => {
+  const firstLine = card.text.trim().split('\n')[0].trim();
+  // Bible reference format: optional number prefix (1-3), book name, chapter:verse
+  // Examples: "Colossians 1:16", "Genesis 1:1", "1 Timothy 1:16", "Psalm 139:1-4", "Pslam 86:15"
+  return /^[1-3]?\s*[A-Za-z]+(\s+[A-Za-z]+)*\s+\d+:\d+/.test(firstLine);
+};
+
 export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   isOpen,
   onClose,
@@ -200,21 +208,67 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
     groupIdentifier?: string;
   }
   const [actionMenu, setActionMenu] = useState<ActionMenuState | null>(null);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close action menu on global click
+  // Close action menu on global click, context menu outside, or scroll
   useEffect(() => {
     if (!actionMenu) return;
-    const handleGlobalClick = () => setActionMenu(null);
+
+    const handleGlobalClick = (e: MouseEvent) => {
+      if (actionMenuRef.current && actionMenuRef.current.contains(e.target as Node)) {
+        return;
+      }
+      setActionMenu(null);
+    };
+
+    const handleGlobalContextMenu = (e: MouseEvent) => {
+      if (actionMenuRef.current && actionMenuRef.current.contains(e.target as Node)) {
+        return;
+      }
+      setActionMenu(null);
+    };
+
+    const handleScroll = () => {
+      setActionMenu(null);
+    };
+
     window.addEventListener('click', handleGlobalClick);
-    return () => window.removeEventListener('click', handleGlobalClick);
+    window.addEventListener('contextmenu', handleGlobalContextMenu);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      window.removeEventListener('click', handleGlobalClick);
+      window.removeEventListener('contextmenu', handleGlobalContextMenu);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
   }, [actionMenu]);
 
   const openContextMenu = (e: React.MouseEvent, card: PrayerCard, isRootCard: boolean, groupIdentifier?: string) => {
+    // If clicking inside an input or textarea, let default browser context menu work for text editing
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
+
+    const menuWidth = 180;
+    const menuHeight = isRootCard && currentStage === 'Supplication' ? 90 : 50;
+    let x = e.clientX;
+    let y = e.clientY;
+
+    if (x + menuWidth > window.innerWidth - 10) {
+      x = window.innerWidth - menuWidth - 10;
+    }
+    if (x < 10) x = 10;
+
+    if (y + menuHeight > window.innerHeight - 10) {
+      y = Math.max(10, e.clientY - menuHeight);
+    }
+    if (y < 10) y = 10;
+
     setActionMenu({
-      x: e.clientX,
-      y: e.clientY,
+      x,
+      y,
       card,
       isRootCard,
       groupIdentifier
@@ -224,10 +278,32 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   const openActionMenu = (e: React.MouseEvent, card: PrayerCard, isRootCard: boolean, groupIdentifier?: string) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Toggle close if clicking the same trigger again
+    if (actionMenu && actionMenu.card.createdDate === card.createdDate && actionMenu.isRootCard === isRootCard) {
+      setActionMenu(null);
+      return;
+    }
+
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const menuWidth = 180;
+    const menuHeight = isRootCard && currentStage === 'Supplication' ? 90 : 50;
+
+    let x = rect.right - menuWidth;
+    if (x < 10) x = rect.left;
+    if (x + menuWidth > window.innerWidth - 10) {
+      x = window.innerWidth - menuWidth - 10;
+    }
+    if (x < 10) x = 10;
+
+    let y = rect.bottom + 6;
+    if (y + menuHeight > window.innerHeight - 10) {
+      y = Math.max(10, rect.top - menuHeight - 6);
+    }
+
     setActionMenu({
-      x: Math.min(window.innerWidth - 220, rect.left),
-      y: rect.bottom + 6,
+      x,
+      y,
       card,
       isRootCard,
       groupIdentifier
@@ -264,6 +340,17 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   const stageTopics = activePlan[currentStage] || [];
   const activeItem = stageTopics[currentTopicIndex];
   const theme = STAGE_THEMES[currentStage];
+
+  // Adoration category: separate the attribute theological description from scripture verses
+  const adorationDescriptionCard =
+    activeItem && currentStage === 'Adoration'
+      ? activeItem.cards.find(c => !isScriptureCard(c))
+      : undefined;
+
+  const displayCards =
+    activeItem && currentStage === 'Adoration' && adorationDescriptionCard
+      ? activeItem.cards.filter(c => c.createdDate !== adorationDescriptionCard.createdDate)
+      : activeItem?.cards || [];
 
   // Determine if this is the final prayer screen of the entire prayer session
   const isLastPrayer = Boolean(activeItem) && (() => {
@@ -330,6 +417,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
   const handlePreviousRef = useRef(handlePrevious);
   handlePreviousRef.current = handlePrevious;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   // 1. Keyboard Navigation:
   // - Esc -> Exit session (or cancel open menus / active inputs)
@@ -355,10 +444,6 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
           setActionMenu(null);
           return;
         }
-        if (isInputFocused) {
-          target?.blur();
-          return;
-        }
         if (isAddingNewPrayer) {
           setIsAddingNewPrayer(false);
           setNewPrayerText('');
@@ -369,16 +454,23 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
           setNewSubPrayerText('');
           return;
         }
+        if (isInputFocused) {
+          target?.blur();
+          return;
+        }
         onClose();
         return;
       }
 
       // Space bar: pause or play the timer (unless user is typing in a text field)
-      if (e.code === 'Space' || e.key === ' ') {
+      if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar') {
         if (isInputFocused) {
-          return; // Allow normal typing of spaces
+          return; // Allow normal typing of spaces in inputs / textareas
         }
         e.preventDefault();
+        if (target && target.tagName === 'BUTTON') {
+          target.blur();
+        }
         timerRef.current?.toggleRunning();
         return;
       }
@@ -398,7 +490,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, actionMenu, isAddingNewPrayer, addingSubPrayerId, onClose]);
+  }, [isOpen, actionMenu, isAddingNewPrayer, addingSubPrayerId]);
 
   // 2. Trackpad Two-Finger Swipe (wheel with deltaX):
   // 2 fingers swipe left (deltaX > 0) -> Advance to next page
@@ -732,16 +824,21 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
           />
 
           {/* Close / Exit Button pinned to right with hover Esc badge */}
-          <button
-            onClick={onClose}
-            className="group absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 py-1 px-2 rounded-xl hover:bg-neutral-800 text-neutral-400 hover:text-white transition-all active:scale-95"
-            title="Exit Session (Esc)"
-          >
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700/80 text-neutral-300 shadow-sm pointer-events-none select-none">
-              Esc
-            </span>
-            <X className="w-5 h-5" />
-          </button>
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center">
+            <button
+              type="button"
+              onClick={onClose}
+              className="group relative flex items-center justify-center p-2 rounded-xl hover:bg-neutral-800 text-neutral-400 hover:text-white transition-all active:scale-95"
+              title="Exit Session (Esc)"
+              aria-label="Exit Session (Esc)"
+            >
+              {/* Floating Esc keycap badge that smoothly reveals near the X on hover */}
+              <span className="pointer-events-none absolute right-full top-1/2 -translate-y-1/2 mr-1.5 inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-medium rounded bg-neutral-800 border border-neutral-700/80 text-neutral-300 shadow-md opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150 ease-out whitespace-nowrap select-none">
+                Esc
+              </span>
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Row 2: Stage Pills Centered Below */}
@@ -825,63 +922,84 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
               <div className={`absolute top-0 left-0 right-0 h-1 ${theme.accent}`} />
 
               {/* Subject & Sub-Label Header - Compact Header Bar */}
-              <div className="shrink-0 flex items-center justify-between pb-2 mb-2 border-b border-neutral-800/80">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                    {theme.subLabel}:
-                  </span>
-                  <h3 className="text-sm sm:text-base font-bold text-neutral-100">
-                    {activeItem.subject.name}
-                  </h3>
+              <div className="shrink-0 pb-2 mb-2 border-b border-neutral-800/80">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+                      {theme.subLabel}:
+                    </span>
+                    <h3 className="text-sm sm:text-base font-bold text-neutral-100">
+                      {activeItem.subject.name}
+                    </h3>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {/* Verse / card count badge: removed for Adoration and Confession */}
+                    {currentStage !== 'Confession' && currentStage !== 'Adoration' && (
+                      activeItem.cards.length > 0 ? (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700/60">
+                          {activeItem.cards.length} {activeItem.cards.length === 1 ? 'card' : 'cards'}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700/60">
+                          Focus Topic
+                        </span>
+                      )
+                    )}
+                    {activeItem.priority === 'high' && (
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1 font-semibold">
+                        <ArrowUp className="w-2.5 h-2.5" /> High
+                      </span>
+                    )}
+                    {activeItem.priority === 'low' && (
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-slate-500/20 text-slate-300 border border-slate-500/30 flex items-center gap-1">
+                        <ArrowDown className="w-2.5 h-2.5" /> Low
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  {currentStage !== 'Confession' && (
-                    activeItem.cards.length > 0 ? (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700/60">
-                        {activeItem.cards.length} {currentStage === 'Adoration' 
-                          ? (activeItem.cards.length === 1 ? 'verse' : 'verses')
-                          : (activeItem.cards.length === 1 ? 'card' : 'cards')}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700/60">
-                        Focus Topic
-                      </span>
-                    )
-                  )}
-                  {activeItem.priority === 'high' && (
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1 font-semibold">
-                      <ArrowUp className="w-2.5 h-2.5" /> High
-                    </span>
-                  )}
-                  {activeItem.priority === 'low' && (
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-slate-500/20 text-slate-300 border border-slate-500/30 flex items-center gap-1">
-                      <ArrowDown className="w-2.5 h-2.5" /> Low
-                    </span>
-                  )}
-                </div>
+                {/* For Adoration: Description displayed in the top section below Creator / attribute name */}
+                {currentStage === 'Adoration' && adorationDescriptionCard && (
+                  <div 
+                    onContextMenu={(e) => openContextMenu(e, adorationDescriptionCard, true)}
+                    className="group/desc relative mt-2 pt-2 border-t border-neutral-800/60 text-xs sm:text-sm font-serif text-neutral-300 leading-relaxed italic"
+                  >
+                    <InlineEditableText
+                      value={adorationDescriptionCard.text}
+                      onSave={(newVal) => handleCardTextEdited(adorationDescriptionCard, newVal)}
+                      isMarkdown={adorationDescriptionCard.isMarkdown}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* The Single Scrollbar for Verses / Cards */}
               <div className="flex-1 min-h-0 overflow-y-auto pr-1.5 space-y-2.5">
-                {activeItem.cards.length === 0 ? (
+                {displayCards.length === 0 ? (
                   <div className="h-full min-h-[200px] flex flex-col items-center justify-center text-center p-6 space-y-3.5 my-auto">
                     <div className="p-3.5 bg-neutral-950/80 border border-neutral-800 rounded-2xl text-neutral-400 shadow-sm">
                       {theme.icon}
                     </div>
                     <div className="space-y-1.5 max-w-md">
                       <h4 className="text-base sm:text-lg font-semibold text-neutral-100 font-serif">
-                        {currentStage === 'Thanksgiving' ? `Give thanks for ${activeItem.subject.name}` : `Pray for ${activeItem.subject.name}`}
+                        {currentStage === 'Adoration'
+                          ? `Scripture Verses for ${activeItem.subject.name}`
+                          : currentStage === 'Thanksgiving'
+                          ? `Give thanks for ${activeItem.subject.name}`
+                          : `Pray for ${activeItem.subject.name}`}
                       </h4>
                       <p className="text-xs text-neutral-400 leading-relaxed">
-                        {currentStage === 'Thanksgiving'
+                        {currentStage === 'Adoration'
+                          ? `No scripture verses found for ${activeItem.subject.name}.`
+                          : currentStage === 'Thanksgiving'
                           ? `Take a dedicated moment to express gratitude and praise God for ${activeItem.subject.name}.`
                           : `Spend time bringing your personal requests and prayers for ${activeItem.subject.name} before the Lord.`}
                       </p>
                     </div>
                   </div>
                 ) : (
-                  groupSessionCards(activeItem.cards, activeItem.subject?.cards || []).map((group) => {
+                  groupSessionCards(displayCards, activeItem.subject?.cards || []).map((group) => {
                     const groupIdentifier = group.groupId;
                     const isAddingSubHere = addingSubPrayerId === groupIdentifier;
 
@@ -893,12 +1011,12 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                       return (
                         <div
                           key={group.groupId}
+                          onContextMenu={(e) => openContextMenu(e, group.rootCard || group.cards[0], true, groupIdentifier)}
                           className="group relative p-3 sm:p-4 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm transition-all hover:border-neutral-700/80"
                         >
                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0">
                             {/* LEFT NODE: Person Name & Actions */}
                             <div 
-                              onContextMenu={(e) => openContextMenu(e, group.rootCard || group.cards[0], true, groupIdentifier)}
                               className="shrink-0 relative flex items-center py-1 max-w-[200px] sm:max-w-[240px] group/name"
                             >
                               <div className="relative shrink-0 max-w-full">
@@ -926,6 +1044,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                           setNewSubPrayerText('');
                                         }}
                                         title="Add sub-prayer"
+                                        aria-label="Add sub-prayer"
                                         className="p-1 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-amber-400 hover:text-amber-300 flex items-center justify-center shadow-md active:scale-95 transition-all"
                                       >
                                         <Plus className="w-3.5 h-3.5" />
@@ -936,7 +1055,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                       type="button"
                                       onClick={(e) => openActionMenu(e, group.rootCard || group.cards[0], true, groupIdentifier)}
                                       title="Options"
-                                      className="p-1 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-neutral-400 hover:text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+                                      aria-label="Options"
+                                      className="p-1 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-neutral-400 hover:text-white flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer"
                                     >
                                       <MoreHorizontal className="w-3.5 h-3.5" />
                                     </button>
@@ -993,16 +1113,15 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                       </div>
 
                                       {/* Subtle 3-dot trigger (Option C) */}
-                                      <div className="shrink-0 flex items-center opacity-0 group-hover/sub:opacity-100 transition-opacity duration-150">
-                                        <button
-                                          type="button"
-                                          onClick={(e) => openActionMenu(e, card, false, groupIdentifier)}
-                                          title="Options"
-                                          className="p-1 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-neutral-400 hover:text-white flex items-center justify-center shadow-sm active:scale-95 transition-all"
-                                        >
-                                          <MoreHorizontal className="w-3.5 h-3.5" />
-                                        </button>
-                                      </div>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => openActionMenu(e, card, false, groupIdentifier)}
+                                        title="Options"
+                                        aria-label="Options"
+                                        className="text-neutral-500 hover:text-neutral-200 opacity-40 group-hover/sub:opacity-80 hover:!opacity-100 p-1 rounded-md hover:bg-neutral-800/80 transition-all shrink-0 cursor-pointer"
+                                      >
+                                        <MoreHorizontal className="w-3.5 h-3.5" />
+                                      </button>
                                     </div>
                                   </div>
                                 );
@@ -1099,6 +1218,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                     setNewSubPrayerText('');
                                   }}
                                   title="Add sub-prayer"
+                                  aria-label="Add sub-prayer"
                                   className="p-1 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-amber-400 hover:text-amber-300 flex items-center justify-center shadow-md active:scale-95 transition-all"
                                 >
                                   <Plus className="w-3.5 h-3.5" />
@@ -1109,7 +1229,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                 type="button"
                                 onClick={(e) => openActionMenu(e, card, true, standaloneId)}
                                 title="Options"
-                                className="p-1 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-neutral-400 hover:text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+                                aria-label="Options"
+                                className="p-1 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-neutral-400 hover:text-white flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer"
                               >
                                 <MoreHorizontal className="w-3.5 h-3.5" />
                               </button>
@@ -1261,15 +1382,20 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
         )}
       </div>
 
-      {/* Floating Action / Context Menu (Option C) */}
+      {/* Floating Action / Context Menu (Option C: Right-Click + Subtle 3-Dot) */}
       {actionMenu && (
         <div
+          ref={actionMenuRef}
           style={{
-            top: `${Math.min(window.innerHeight - 130, Math.max(10, actionMenu.y))}px`,
-            left: `${Math.min(window.innerWidth - 230, Math.max(10, actionMenu.x))}px`
+            top: `${actionMenu.y}px`,
+            left: `${actionMenu.x}px`
           }}
-          className="fixed z-50 min-w-[200px] bg-neutral-900/95 backdrop-blur-md border border-neutral-700/80 rounded-xl shadow-2xl p-1.5 text-xs animate-fadeIn space-y-1 select-none"
+          className="fixed z-[100] min-w-[200px] bg-neutral-900/95 backdrop-blur-md border border-neutral-700/80 rounded-xl shadow-2xl p-1.5 text-xs animate-fadeIn space-y-1 select-none"
           onClick={(e) => e.stopPropagation()}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
         >
           {currentStage === 'Supplication' && (actionMenu.isRootCard || actionMenu.groupIdentifier) && (
             <button
@@ -1280,9 +1406,9 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                 setNewSubPrayerText('');
                 setActionMenu(null);
               }}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-neutral-200 hover:text-white hover:bg-neutral-800 rounded-lg text-left transition-colors font-medium"
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-neutral-200 hover:text-white hover:bg-neutral-800/90 rounded-lg text-left transition-colors font-medium group/item cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <Plus className="w-3.5 h-3.5 text-amber-400 group-hover/item:scale-110 transition-transform shrink-0" />
               <span>Add Sub-prayer</span>
             </button>
           )}
@@ -1293,11 +1419,13 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
               handleArchive(actionMenu.card);
               setActionMenu(null);
             }}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-neutral-300 hover:text-amber-400 hover:bg-neutral-800 rounded-lg text-left transition-colors"
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-neutral-300 hover:text-amber-400 hover:bg-neutral-800/90 rounded-lg text-left transition-colors group/item cursor-pointer"
           >
-            <Archive className="w-3.5 h-3.5 text-neutral-400" />
+            <Archive className="w-3.5 h-3.5 text-neutral-400 group-hover/item:text-amber-400 group-hover/item:scale-110 transition-transform shrink-0" />
             <span>
-              {actionMenu.isRootCard
+              {currentStage === 'Adoration'
+                ? 'Archive Verse'
+                : actionMenu.isRootCard
                 ? 'Archive Person & All Requests'
                 : 'Archive This Request'}
             </span>

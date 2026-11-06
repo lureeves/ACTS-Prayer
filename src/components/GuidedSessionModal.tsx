@@ -1144,32 +1144,29 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                 type="button"
                 onClick={handlePrevious}
                 disabled={currentStageIndex === 0 && currentTopicIndex === 0}
-                className="px-4 py-2 rounded-xl border border-neutral-800 hover:bg-neutral-900 text-neutral-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none text-xs font-medium flex items-center gap-1.5 transition-all active:scale-95"
-                title="Previous topic (or swipe right with 2 fingers / Left Arrow ←)"
+                className="px-3.5 py-2 rounded-xl border border-neutral-800 hover:bg-neutral-900 text-neutral-400 hover:text-white disabled:opacity-30 disabled:pointer-events-none flex items-center justify-center transition-all active:scale-95"
+                title="Previous topic (or swipe right / Left Arrow ←)"
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                <span>Previous</span>
-                <span className="hidden sm:inline text-[10px] text-neutral-500 font-mono">←</span>
+                <ChevronLeft className="w-5 h-5" />
               </button>
 
               <button
                 type="button"
                 onClick={handleNext}
-                className={`px-5 py-2 rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 transition-all active:scale-95 ${
+                className={`flex items-center justify-center transition-all active:scale-95 ${
                   isLastPrayer
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md'
-                    : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-100 hover:text-white border border-neutral-700/80 hover:border-neutral-600 shadow-sm'
+                    ? 'px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm gap-1.5 shadow-md'
+                    : 'px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-100 hover:text-white border border-neutral-700/80 hover:border-neutral-600 shadow-sm'
                 }`}
-                title={isLastPrayer ? "Finish Praying (or swipe left / Right Arrow →)" : "Prayed & Continue (or swipe left / Right Arrow →)"}
+                title={isLastPrayer ? "Finish Praying (or swipe left / Right Arrow →)" : "Continue (or swipe left / Right Arrow →)"}
               >
-                <span>{isLastPrayer ? 'Finish Praying' : 'Prayed & Continue'}</span>
                 {isLastPrayer ? (
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                ) : (
                   <>
-                    <span className="hidden sm:inline text-[10px] text-neutral-400 font-mono">→</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-neutral-300" />
+                    <span>Finish Praying</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-200" />
                   </>
+                ) : (
+                  <ChevronRight className="w-5 h-5" />
                 )}
               </button>
             </div>

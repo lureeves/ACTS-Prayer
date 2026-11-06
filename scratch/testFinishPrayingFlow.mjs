@@ -38,7 +38,7 @@ function computeIsLastPrayer(activePlan, currentStageIndex, currentTopicIndex) {
   })();
 }
 
-// Test 1: Non-final topics show "Prayed & Continue"
+// Test 1: Non-final topics show navigation arrow
 console.log('Test 1: Non-final topics should NOT be identified as last prayer');
 for (let stageIdx = 0; stageIdx < ACTS_STAGES.length - 1; stageIdx++) {
   const stg = ACTS_STAGES[stageIdx];
@@ -48,7 +48,7 @@ for (let stageIdx = 0; stageIdx < ACTS_STAGES.length - 1; stageIdx++) {
     assert.equal(isLast, false, `${stg} topic ${topicIdx + 1} should NOT be last prayer`);
   }
 }
-console.log(`  ${GREEN}✓${RESET} All topics in Adoration, Confession, and Thanksgiving show "Prayed & Continue"`);
+console.log(`  ${GREEN}✓${RESET} All topics in Adoration, Confession, and Thanksgiving show forward navigation arrow`);
 
 // Test 2: In Supplication, only the final topic is last prayer
 console.log('\nTest 2: Final topic in Supplication identifies as last prayer');

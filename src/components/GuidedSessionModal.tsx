@@ -1155,10 +1155,10 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
               <button
                 type="button"
                 onClick={handleNext}
-                className={`px-5 py-2 rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 shadow-lg transition-all active:scale-95 ${
+                className={`px-5 py-2 rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 transition-all active:scale-95 ${
                   isLastPrayer
-                    ? 'bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-semibold'
-                    : 'bg-neutral-100 hover:bg-white text-neutral-950'
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-md'
+                    : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-100 hover:text-white border border-neutral-700/80 hover:border-neutral-600 shadow-sm'
                 }`}
                 title={isLastPrayer ? "Finish Praying (or swipe left / Right Arrow →)" : "Prayed & Continue (or swipe left / Right Arrow →)"}
               >
@@ -1167,8 +1167,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                   <CheckCircle2 className="w-3.5 h-3.5" />
                 ) : (
                   <>
-                    <span className="hidden sm:inline text-[10px] opacity-60 font-mono">→</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline text-[10px] text-neutral-400 font-mono">→</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-neutral-300" />
                   </>
                 )}
               </button>

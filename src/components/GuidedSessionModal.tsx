@@ -896,31 +896,52 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                           className="group relative p-3 sm:p-4 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm transition-all hover:border-neutral-700/80"
                         >
                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0">
-                            {/* LEFT NODE: Person Name & Subtle Options */}
+                            {/* LEFT NODE: Person Name & Actions */}
                             <div 
                               onContextMenu={(e) => openContextMenu(e, group.rootCard || group.cards[0], true, groupIdentifier)}
                               className="shrink-0 relative flex items-center py-1 max-w-[200px] sm:max-w-[240px] group/name"
                             >
-                              <div className="relative shrink-0 max-w-full flex items-center gap-1.5">
-                                <InlineEditableText
-                                  value={group.rootTitle}
-                                  onSave={(newVal) => {
-                                    if (group.rootCard) {
-                                      handleCardTextEdited(group.rootCard, newVal);
-                                    }
-                                  }}
-                                  className="text-sm sm:text-base font-serif text-neutral-100 font-semibold leading-snug tracking-tight"
-                                />
+                              <div className="relative shrink-0 max-w-full">
+                                <div className="flex items-center gap-1.5">
+                                  <InlineEditableText
+                                    value={group.rootTitle}
+                                    onSave={(newVal) => {
+                                      if (group.rootCard) {
+                                        handleCardTextEdited(group.rootCard, newVal);
+                                      }
+                                    }}
+                                    className="text-sm sm:text-base font-serif text-neutral-100 font-semibold leading-snug tracking-tight"
+                                  />
+                                </div>
 
-                                {/* Subtle 3-dot trigger (Option C) */}
-                                <button
-                                  type="button"
-                                  onClick={(e) => openActionMenu(e, group.rootCard || group.cards[0], true, groupIdentifier)}
-                                  title="Options"
-                                  className="text-neutral-500 hover:text-neutral-200 opacity-30 hover:opacity-100 p-0.5 rounded hover:bg-neutral-800 transition-all shrink-0"
-                                >
-                                  <MoreHorizontal className="w-3.5 h-3.5" />
-                                </button>
+                                {/* Actions below name: [+] button (Supplication only) & subtle 3-dot trigger (Option C) */}
+                                <div className="h-0 relative">
+                                  <div className="absolute top-1.5 left-0 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20 whitespace-nowrap">
+                                    {currentStage === 'Supplication' && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setAddingSubPrayerId(isAddingSubHere ? null : groupIdentifier);
+                                          setNewSubPrayerText('');
+                                        }}
+                                        title="Add sub-prayer"
+                                        className="p-1 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-amber-400 hover:text-amber-300 flex items-center justify-center shadow-md active:scale-95 transition-all"
+                                      >
+                                        <Plus className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      onClick={(e) => openActionMenu(e, group.rootCard || group.cards[0], true, groupIdentifier)}
+                                      title="Options"
+                                      className="p-1 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-neutral-400 hover:text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+                                    >
+                                      <MoreHorizontal className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
                             </div>
 
@@ -972,14 +993,16 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                       </div>
 
                                       {/* Subtle 3-dot trigger (Option C) */}
-                                      <button
-                                        type="button"
-                                        onClick={(e) => openActionMenu(e, card, false, groupIdentifier)}
-                                        title="Options"
-                                        className="text-neutral-500 hover:text-neutral-200 opacity-30 hover:opacity-100 p-1 rounded-md hover:bg-neutral-800/80 transition-all shrink-0"
-                                      >
-                                        <MoreHorizontal className="w-3.5 h-3.5" />
-                                      </button>
+                                      <div className="shrink-0 flex items-center opacity-0 group-hover/sub:opacity-100 transition-opacity duration-150">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => openActionMenu(e, card, false, groupIdentifier)}
+                                          title="Options"
+                                          className="p-1 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-neutral-400 hover:text-white flex items-center justify-center shadow-sm active:scale-95 transition-all"
+                                        >
+                                          <MoreHorizontal className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 );
@@ -1065,15 +1088,32 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                               />
                             </div>
 
-                            {/* Subtle 3-dot trigger (Option C) */}
-                            <button
-                              type="button"
-                              onClick={(e) => openActionMenu(e, card, true, standaloneId)}
-                              title="Options"
-                              className="text-neutral-500 hover:text-neutral-200 opacity-30 hover:opacity-100 p-1 rounded-md hover:bg-neutral-800/80 transition-all shrink-0"
-                            >
-                              <MoreHorizontal className="w-3.5 h-3.5" />
-                            </button>
+                            {/* Actions: [+] button (Supplication only) & subtle 3-dot trigger (Option C) */}
+                            <div className="shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                              {currentStage === 'Supplication' && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAddingSubPrayerId(isAddingStandaloneSub ? null : standaloneId);
+                                    setNewSubPrayerText('');
+                                  }}
+                                  title="Add sub-prayer"
+                                  className="p-1 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-amber-400 hover:text-amber-300 flex items-center justify-center shadow-md active:scale-95 transition-all"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={(e) => openActionMenu(e, card, true, standaloneId)}
+                                title="Options"
+                                className="p-1 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-neutral-400 hover:text-white flex items-center justify-center shadow-md active:scale-95 transition-all"
+                              >
+                                <MoreHorizontal className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
 
                           {/* Inline Sub-Prayer Input Box for standalone card */}
@@ -1220,6 +1260,50 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
           </div>
         )}
       </div>
+
+      {/* Floating Action / Context Menu (Option C) */}
+      {actionMenu && (
+        <div
+          style={{
+            top: `${Math.min(window.innerHeight - 130, Math.max(10, actionMenu.y))}px`,
+            left: `${Math.min(window.innerWidth - 230, Math.max(10, actionMenu.x))}px`
+          }}
+          className="fixed z-50 min-w-[200px] bg-neutral-900/95 backdrop-blur-md border border-neutral-700/80 rounded-xl shadow-2xl p-1.5 text-xs animate-fadeIn space-y-1 select-none"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {currentStage === 'Supplication' && (actionMenu.isRootCard || actionMenu.groupIdentifier) && (
+            <button
+              type="button"
+              onClick={() => {
+                const targetId = actionMenu.groupIdentifier || actionMenu.card.stackGroup || actionMenu.card.threadId || actionMenu.card.createdDate;
+                setAddingSubPrayerId(targetId);
+                setNewSubPrayerText('');
+                setActionMenu(null);
+              }}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-neutral-200 hover:text-white hover:bg-neutral-800 rounded-lg text-left transition-colors font-medium"
+            >
+              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <span>Add Sub-prayer</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              handleArchive(actionMenu.card);
+              setActionMenu(null);
+            }}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 text-neutral-300 hover:text-amber-400 hover:bg-neutral-800 rounded-lg text-left transition-colors"
+          >
+            <Archive className="w-3.5 h-3.5 text-neutral-400" />
+            <span>
+              {actionMenu.isRootCard
+                ? 'Archive Person & All Requests'
+                : 'Archive This Request'}
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

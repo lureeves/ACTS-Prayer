@@ -4,7 +4,6 @@ import {
   ChevronRight, 
   ChevronLeft, 
   CheckCircle2, 
-  Sparkles, 
   ShieldAlert, 
   Smile, 
   HandHeart, 
@@ -184,7 +183,6 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 }) => {
   const [currentStageIndex, setCurrentStageIndex] = useState<number>(0);
   const [currentTopicIndex, setCurrentTopicIndex] = useState<number>(0);
-  const [completed, setCompleted] = useState<boolean>(false);
   const [activePlan, setActivePlan] = useState<Record<ACTSStage, ActiveSessionItem[]>>(sessionPlan);
   const [addingSubPrayerId, setAddingSubPrayerId] = useState<string | null>(null);
   const [newSubPrayerText, setNewSubPrayerText] = useState<string>('');
@@ -210,7 +208,6 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
       setActivePlan(sessionPlan);
       setCurrentStageIndex(0);
       setCurrentTopicIndex(0);
-      setCompleted(false);
       setAddingSubPrayerId(null);
       setNewSubPrayerText('');
       setIsAddingNewPrayer(false);
@@ -224,9 +221,24 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   const activeItem = stageTopics[currentTopicIndex];
   const theme = STAGE_THEMES[currentStage];
 
+  // Determine if this is the final prayer screen of the entire prayer session
+  const isLastPrayer = Boolean(activeItem) && (() => {
+    if (currentTopicIndex < stageTopics.length - 1) return false;
+    for (let sIdx = currentStageIndex + 1; sIdx < ACTS_STAGES.length; sIdx++) {
+      const nextTopics = activePlan[ACTS_STAGES[sIdx]] || [];
+      if (nextTopics.length > 0) return false;
+    }
+    return true;
+  })();
+
   const handleNext = () => {
     if (activeItem) {
       onTopicPrayed(activeItem.categoryName, activeItem.subject.name, activeItem.cards);
+    }
+
+    if (isLastPrayer) {
+      onClose();
+      return;
     }
 
     if (currentTopicIndex + 1 < stageTopics.length) {
@@ -235,15 +247,20 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
       setNewPrayerText('');
       setAddingSubPrayerId(null);
     } else {
-      // Advance to next ACTS stage
-      if (currentStageIndex + 1 < ACTS_STAGES.length) {
-        setCurrentStageIndex(currentStageIndex + 1);
+      // Advance to next ACTS stage with topics
+      let nextStageIdx = currentStageIndex + 1;
+      while (nextStageIdx < ACTS_STAGES.length && (activePlan[ACTS_STAGES[nextStageIdx]] || []).length === 0) {
+        nextStageIdx++;
+      }
+
+      if (nextStageIdx < ACTS_STAGES.length) {
+        setCurrentStageIndex(nextStageIdx);
         setCurrentTopicIndex(0);
         setIsAddingNewPrayer(false);
         setNewPrayerText('');
         setAddingSubPrayerId(null);
       } else {
-        setCompleted(true);
+        onClose();
       }
     }
   };
@@ -272,7 +289,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
   // 1. Keyboard Navigation: Right arrow -> Next page, Left arrow -> Previous page
   useEffect(() => {
-    if (!isOpen || completed) return;
+    if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't intercept arrow keys if user is editing text in an input or textarea
@@ -298,7 +315,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, completed]);
+  }, [isOpen]);
 
   // 2. Trackpad Two-Finger Swipe (wheel with deltaX):
   // 2 fingers swipe left (deltaX > 0) -> Advance to next page
@@ -308,7 +325,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   const wheelResetTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isOpen || completed) return;
+    if (!isOpen) return;
 
     const handleWheel = (e: WheelEvent) => {
       const now = Date.now();
@@ -357,14 +374,14 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
         window.clearTimeout(wheelResetTimeoutRef.current);
       }
     };
-  }, [isOpen, completed]);
+  }, [isOpen]);
 
   // 3. Touchscreen Swipe (Touchstart / Touchend on Mobile / iOS / iPad)
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const lastTouchTriggerRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!isOpen || completed) return;
+    if (!isOpen) return;
 
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length > 0) {
@@ -412,7 +429,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isOpen, completed]);
+  }, [isOpen]);
 
   const groupSessionCards = (cards: PrayerCard[], allSubjectCards: PrayerCard[]) => {
     const groups: Record<string, { rootTitle?: string; rootCard?: PrayerCard; cards: PrayerCard[] }> = {};
@@ -682,25 +699,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
       {/* Main Content Area - Anchored flex-1 with NO outer scrollbar */}
       <div className="flex-1 min-h-0 flex flex-col items-center justify-between px-4 sm:px-6 py-2.5 max-w-3xl mx-auto w-full overflow-hidden">
-        {completed ? (
-          <div className="text-center space-y-4 animate-fadeIn my-auto">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
-              <Sparkles className="w-8 h-8 animate-bounce" />
-            </div>
-            <div className="space-y-1.5">
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-300">Amen!</h2>
-              <p className="text-neutral-400 max-w-md mx-auto text-xs sm:text-sm leading-relaxed">
-                You have completed your ACTS prayer journey today. All topics prayed have been saved and will rotate to the next scheduled topics in your next session.
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="px-5 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs sm:text-sm font-medium transition-all"
-            >
-              Return to Overview
-            </button>
-          </div>
-        ) : stageTopics.length === 0 || !activeItem ? (
+        {stageTopics.length === 0 || !activeItem ? (
           <div className="text-center space-y-3 my-auto">
             <div className="p-3 bg-neutral-900 rounded-full w-12 h-12 flex items-center justify-center mx-auto text-neutral-500">
               {theme.icon}
@@ -1155,15 +1154,21 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                 type="button"
                 onClick={handleNext}
                 className={`px-5 py-2 rounded-xl font-medium text-xs sm:text-sm flex items-center gap-1.5 shadow-lg transition-all active:scale-95 ${
-                  currentStageIndex === ACTS_STAGES.length - 1 && currentTopicIndex === stageTopics.length - 1
+                  isLastPrayer
                     ? 'bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-semibold'
                     : 'bg-neutral-100 hover:bg-white text-neutral-950'
                 }`}
-                title="Prayed & Continue (or swipe left with 2 fingers / Right Arrow →)"
+                title={isLastPrayer ? "Finish Praying (or swipe left / Right Arrow →)" : "Prayed & Continue (or swipe left / Right Arrow →)"}
               >
-                <span>Prayed & Continue</span>
-                <span className="hidden sm:inline text-[10px] opacity-60 font-mono">→</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                <span>{isLastPrayer ? 'Finish Praying' : 'Prayed & Continue'}</span>
+                {isLastPrayer ? (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                ) : (
+                  <>
+                    <span className="hidden sm:inline text-[10px] opacity-60 font-mono">→</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </>
+                )}
               </button>
             </div>
           </div>

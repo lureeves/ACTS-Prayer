@@ -1,5 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Play, Pause, RotateCcw, BellRing } from 'lucide-react';
+
+export interface TimerBarHandle {
+  toggleRunning: () => void;
+  isRunning: boolean;
+}
 
 interface TimerBarProps {
   initialMinutes?: number;
@@ -42,18 +47,25 @@ export const playSoftChime = () => {
   }
 };
 
-export const TimerBar: React.FC<TimerBarProps> = ({
+export const TimerBar = forwardRef<TimerBarHandle, TimerBarProps>(({
   initialMinutes = 15,
   autoStart = true,
   soundEnabled = true,
   onTimeUp,
   className = ''
-}) => {
+}, ref) => {
   const [secondsRemaining, setSecondsRemaining] = useState(initialMinutes * 60);
   const [isRunning, setIsRunning] = useState(autoStart);
   const [isFinished, setIsFinished] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const chimePlayedRef = useRef<boolean>(false);
+
+  useImperativeHandle(ref, () => ({
+    toggleRunning: () => {
+      setIsRunning(prev => !prev);
+    },
+    isRunning
+  }), [isRunning]);
 
   // Sync when initialMinutes changes
   useEffect(() => {
@@ -204,4 +216,4 @@ export const TimerBar: React.FC<TimerBarProps> = ({
       </div>
     </div>
   );
-};
+});

@@ -11,12 +11,13 @@ import {
   ArrowUp,
   ArrowDown,
   Plus,
-  Archive
+  Archive,
+  MoreHorizontal
 } from 'lucide-react';
 import { ACTSStage, ACTS_STAGES, PrayerCard } from '../types/prayer';
 import { ActiveSessionItem } from '../services/scheduler';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { TimerBar } from './TimerBar';
+import { TimerBar, TimerBarHandle } from './TimerBar';
 
 interface GuidedSessionModalProps {
   isOpen: boolean;
@@ -189,6 +190,49 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   const [isAddingNewPrayer, setIsAddingNewPrayer] = useState<boolean>(false);
   const [newPrayerText, setNewPrayerText] = useState<string>('');
   const prevIsOpenRef = useRef<boolean>(false);
+  const timerRef = useRef<TimerBarHandle>(null);
+
+  interface ActionMenuState {
+    x: number;
+    y: number;
+    card: PrayerCard;
+    isRootCard: boolean;
+    groupIdentifier?: string;
+  }
+  const [actionMenu, setActionMenu] = useState<ActionMenuState | null>(null);
+
+  // Close action menu on global click
+  useEffect(() => {
+    if (!actionMenu) return;
+    const handleGlobalClick = () => setActionMenu(null);
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, [actionMenu]);
+
+  const openContextMenu = (e: React.MouseEvent, card: PrayerCard, isRootCard: boolean, groupIdentifier?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActionMenu({
+      x: e.clientX,
+      y: e.clientY,
+      card,
+      isRootCard,
+      groupIdentifier
+    });
+  };
+
+  const openActionMenu = (e: React.MouseEvent, card: PrayerCard, isRootCard: boolean, groupIdentifier?: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setActionMenu({
+      x: Math.min(window.innerWidth - 220, rect.left),
+      y: rect.bottom + 6,
+      card,
+      isRootCard,
+      groupIdentifier
+    });
+  };
 
   // Lock background body scroll to eliminate outer page scrollbars
   useEffect(() => {
@@ -287,20 +331,59 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
   const handlePreviousRef = useRef(handlePrevious);
   handlePreviousRef.current = handlePrevious;
 
-  // 1. Keyboard Navigation: Right arrow -> Next page, Left arrow -> Previous page
+  // 1. Keyboard Navigation:
+  // - Esc -> Exit session (or cancel open menus / active inputs)
+  // - Space -> Pause / Play timer
+  // - Right arrow -> Next page, Left arrow -> Previous page
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't intercept arrow keys if user is editing text in an input or textarea
       const target = e.target as HTMLElement | null;
-      if (
+      const isInputFocused = Boolean(
         target &&
         (target.tagName === 'INPUT' ||
           target.tagName === 'TEXTAREA' ||
           target.isContentEditable ||
           target.closest('.group-editable'))
-      ) {
+      );
+
+      // Escape key: dismiss action menu, active inputs, or exit session
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (actionMenu) {
+          setActionMenu(null);
+          return;
+        }
+        if (isInputFocused) {
+          target?.blur();
+          return;
+        }
+        if (isAddingNewPrayer) {
+          setIsAddingNewPrayer(false);
+          setNewPrayerText('');
+          return;
+        }
+        if (addingSubPrayerId) {
+          setAddingSubPrayerId(null);
+          setNewSubPrayerText('');
+          return;
+        }
+        onClose();
+        return;
+      }
+
+      // Space bar: pause or play the timer (unless user is typing in a text field)
+      if (e.code === 'Space' || e.key === ' ') {
+        if (isInputFocused) {
+          return; // Allow normal typing of spaces
+        }
+        e.preventDefault();
+        timerRef.current?.toggleRunning();
+        return;
+      }
+
+      if (isInputFocused) {
         return;
       }
 
@@ -315,7 +398,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, actionMenu, isAddingNewPrayer, addingSubPrayerId, onClose]);
 
   // 2. Trackpad Two-Finger Swipe (wheel with deltaX):
   // 2 fingers swipe left (deltaX > 0) -> Advance to next page
@@ -642,17 +725,21 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
         <div className="relative flex items-center justify-center w-full min-h-[34px]">
           {/* Centered Hoverable Clock */}
           <TimerBar
+            ref={timerRef}
             initialMinutes={initialMinutes}
             autoStart={autoStartTimer}
             soundEnabled={soundEnabled}
           />
 
-          {/* Close / Exit Button pinned to right */}
+          {/* Close / Exit Button pinned to right with hover Esc badge */}
           <button
             onClick={onClose}
-            className="absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors"
-            title="Exit Session"
+            className="group absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-1.5 py-1 px-2 rounded-xl hover:bg-neutral-800 text-neutral-400 hover:text-white transition-all active:scale-95"
+            title="Exit Session (Esc)"
           >
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700/80 text-neutral-300 shadow-sm pointer-events-none select-none">
+              Esc
+            </span>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -749,16 +836,18 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  {activeItem.cards.length > 0 ? (
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700/60">
-                      {activeItem.cards.length} {currentStage === 'Adoration' 
-                        ? (activeItem.cards.length === 1 ? 'verse' : 'verses')
-                        : (activeItem.cards.length === 1 ? 'card' : 'cards')}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700/60">
-                      Focus Topic
-                    </span>
+                  {currentStage !== 'Confession' && (
+                    activeItem.cards.length > 0 ? (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700/60">
+                        {activeItem.cards.length} {currentStage === 'Adoration' 
+                          ? (activeItem.cards.length === 1 ? 'verse' : 'verses')
+                          : (activeItem.cards.length === 1 ? 'card' : 'cards')}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700/60">
+                        Focus Topic
+                      </span>
+                    )
                   )}
                   {activeItem.priority === 'high' && (
                     <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1 font-semibold">
@@ -807,9 +896,12 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                           className="group relative p-3 sm:p-4 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm transition-all hover:border-neutral-700/80"
                         >
                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0">
-                            {/* LEFT NODE: Person Name & Action Buttons */}
-                            <div className="shrink-0 relative flex items-center py-1 max-w-[200px] sm:max-w-[240px]">
-                              <div className="relative group/name shrink-0 max-w-full">
+                            {/* LEFT NODE: Person Name & Subtle Options */}
+                            <div 
+                              onContextMenu={(e) => openContextMenu(e, group.rootCard || group.cards[0], true, groupIdentifier)}
+                              className="shrink-0 relative flex items-center py-1 max-w-[200px] sm:max-w-[240px] group/name"
+                            >
+                              <div className="relative shrink-0 max-w-full flex items-center gap-1.5">
                                 <InlineEditableText
                                   value={group.rootTitle}
                                   onSave={(newVal) => {
@@ -820,39 +912,15 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                   className="text-sm sm:text-base font-serif text-neutral-100 font-semibold leading-snug tracking-tight"
                                 />
 
-                                {/* Action buttons on hover: positioned cleanly below name without offsetting the line */}
-                                <div className="h-0 relative">
-                                  <div className="absolute top-1.5 left-0 flex items-center gap-1.5 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20 whitespace-nowrap">
-                                    {currentStage === 'Supplication' && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setAddingSubPrayerId(isAddingSubHere ? null : groupIdentifier);
-                                          setNewSubPrayerText('');
-                                        }}
-                                        title="Add sub-prayer for this person"
-                                        className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-md active:scale-95"
-                                      >
-                                        <Plus className="w-3 h-3 text-amber-400" />
-                                        <span>Sub-prayer</span>
-                                      </button>
-                                    )}
-
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (group.rootCard) handleArchive(group.rootCard);
-                                      }}
-                                      title="Archive this person & all requests"
-                                      className="px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-md active:scale-95"
-                                    >
-                                      <Archive className="w-3 h-3 text-neutral-400" />
-                                      <span>Archive</span>
-                                    </button>
-                                  </div>
-                                </div>
+                                {/* Subtle 3-dot trigger (Option C) */}
+                                <button
+                                  type="button"
+                                  onClick={(e) => openActionMenu(e, group.rootCard || group.cards[0], true, groupIdentifier)}
+                                  title="Options"
+                                  className="text-neutral-500 hover:text-neutral-200 opacity-30 hover:opacity-100 p-0.5 rounded hover:bg-neutral-800 transition-all shrink-0"
+                                >
+                                  <MoreHorizontal className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </div>
 
@@ -891,7 +959,10 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                     )}
 
                                     {/* The Prayer Request Card */}
-                                    <div className="w-full px-3 py-2 sm:py-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800/70 flex items-start justify-between gap-3 transition-colors hover:border-neutral-700/80">
+                                    <div 
+                                      onContextMenu={(e) => openContextMenu(e, card, false, groupIdentifier)}
+                                      className="w-full px-3 py-2 sm:py-2.5 rounded-lg bg-neutral-900/60 border border-neutral-800/70 flex items-start justify-between gap-3 transition-colors hover:border-neutral-700/80"
+                                    >
                                       <div className="flex-1 min-w-0 text-sm sm:text-base font-serif text-neutral-200 leading-relaxed font-normal">
                                         <InlineEditableText
                                           value={card.text}
@@ -900,17 +971,14 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                         />
                                       </div>
 
+                                      {/* Subtle 3-dot trigger (Option C) */}
                                       <button
                                         type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleArchive(card);
-                                        }}
-                                        title="Archive this sub-prayer"
-                                        className="opacity-0 group-hover/sub:opacity-100 transition-opacity duration-200 px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95 shrink-0"
+                                        onClick={(e) => openActionMenu(e, card, false, groupIdentifier)}
+                                        title="Options"
+                                        className="text-neutral-500 hover:text-neutral-200 opacity-30 hover:opacity-100 p-1 rounded-md hover:bg-neutral-800/80 transition-all shrink-0"
                                       >
-                                        <Archive className="w-3 h-3 text-neutral-400" />
-                                        <span>Archive</span>
+                                        <MoreHorizontal className="w-3.5 h-3.5" />
                                       </button>
                                     </div>
                                   </div>
@@ -984,6 +1052,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                       return (
                         <div
                           key={standaloneId}
+                          onContextMenu={(e) => openContextMenu(e, card, true, standaloneId)}
                           className="group relative p-3 sm:p-3.5 rounded-xl bg-neutral-950/70 border border-neutral-800/80 shadow-sm space-y-1.5 transition-all hover:border-neutral-700/80"
                         >
                           <div className="flex items-start justify-between gap-3">
@@ -996,37 +1065,15 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                               />
                             </div>
 
-                            {/* Right side actions on hover: + Sub-prayer on top (Supplication only), Archive below */}
-                            <div className="shrink-0 flex flex-col items-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              {currentStage === 'Supplication' && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setAddingSubPrayerId(isAddingStandaloneSub ? null : standaloneId);
-                                    setNewSubPrayerText('');
-                                  }}
-                                  title="Add sub-prayer for this person"
-                                  className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
-                                >
-                                  <Plus className="w-3 h-3 text-amber-400" />
-                                  <span>Sub-prayer</span>
-                                </button>
-                              )}
-
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleArchive(card);
-                                }}
-                                title="Archive this prayer"
-                                className="px-2 py-0.5 rounded-lg bg-neutral-800/70 hover:bg-neutral-700 border border-neutral-700/50 text-[11px] text-neutral-400 hover:text-amber-400 flex items-center gap-1 shadow-sm active:scale-95"
-                              >
-                                <Archive className="w-3 h-3 text-neutral-400" />
-                                <span>Archive</span>
-                              </button>
-                            </div>
+                            {/* Subtle 3-dot trigger (Option C) */}
+                            <button
+                              type="button"
+                              onClick={(e) => openActionMenu(e, card, true, standaloneId)}
+                              title="Options"
+                              className="text-neutral-500 hover:text-neutral-200 opacity-30 hover:opacity-100 p-1 rounded-md hover:bg-neutral-800/80 transition-all shrink-0"
+                            >
+                              <MoreHorizontal className="w-3.5 h-3.5" />
+                            </button>
                           </div>
 
                           {/* Inline Sub-Prayer Input Box for standalone card */}

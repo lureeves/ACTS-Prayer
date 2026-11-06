@@ -484,6 +484,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
   // Handle adding a sub-prayer for a person / card
   const handleConfirmAddSubPrayer = (parentCard: PrayerCard) => {
+    if (currentStage !== 'Supplication') return;
     if (!newSubPrayerText.trim() || !activeItem || !onAddCardUpdate) return;
     const addedCard = onAddCardUpdate(activeItem.subject.name, parentCard, newSubPrayerText.trim());
     if (!addedCard) return;
@@ -542,6 +543,7 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
 
   // Handle adding a brand new prayer card under the last one in this topic's list
   const handleConfirmAddNewPrayer = () => {
+    if (currentStage !== 'Supplication') return;
     if (!newPrayerText.trim() || !activeItem || !onAddNewCard) return;
     const addedCard = onAddNewCard(activeItem.subject.name, newPrayerText.trim());
     if (!addedCard) return;
@@ -822,19 +824,21 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                 {/* Action buttons on hover: positioned cleanly below name without offsetting the line */}
                                 <div className="h-0 relative">
                                   <div className="absolute top-1.5 left-0 flex items-center gap-1.5 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-20 whitespace-nowrap">
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setAddingSubPrayerId(isAddingSubHere ? null : groupIdentifier);
-                                        setNewSubPrayerText('');
-                                      }}
-                                      title="Add sub-prayer for this person"
-                                      className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-md active:scale-95"
-                                    >
-                                      <Plus className="w-3 h-3 text-amber-400" />
-                                      <span>Sub-prayer</span>
-                                    </button>
+                                    {currentStage === 'Supplication' && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setAddingSubPrayerId(isAddingSubHere ? null : groupIdentifier);
+                                          setNewSubPrayerText('');
+                                        }}
+                                        title="Add sub-prayer for this person"
+                                        className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-md active:scale-95"
+                                      >
+                                        <Plus className="w-3 h-3 text-amber-400" />
+                                        <span>Sub-prayer</span>
+                                      </button>
+                                    )}
 
                                     <button
                                       type="button"
@@ -991,21 +995,23 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                               />
                             </div>
 
-                            {/* Right side actions on hover: + Sub-prayer on top, Archive below */}
+                            {/* Right side actions on hover: + Sub-prayer on top (Supplication only), Archive below */}
                             <div className="shrink-0 flex flex-col items-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setAddingSubPrayerId(isAddingStandaloneSub ? null : standaloneId);
-                                  setNewSubPrayerText('');
-                                }}
-                                title="Add sub-prayer for this person"
-                                className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
-                              >
-                                <Plus className="w-3 h-3 text-amber-400" />
-                                <span>Sub-prayer</span>
-                              </button>
+                              {currentStage === 'Supplication' && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAddingSubPrayerId(isAddingStandaloneSub ? null : standaloneId);
+                                    setNewSubPrayerText('');
+                                  }}
+                                  title="Add sub-prayer for this person"
+                                  className="px-2 py-0.5 rounded-lg bg-neutral-800/90 hover:bg-neutral-700 border border-neutral-700/60 text-[11px] text-neutral-300 hover:text-white flex items-center gap-1 shadow-sm active:scale-95"
+                                >
+                                  <Plus className="w-3 h-3 text-amber-400" />
+                                  <span>Sub-prayer</span>
+                                </button>
+                              )}
 
                               <button
                                 type="button"
@@ -1069,8 +1075,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                   })
                 )}
 
-                {/* Option for new prayer under the last one in the list */}
-                {activeItem.cards.length > 0 && (
+                {/* Option for new prayer under the last one in the list (Supplication only) */}
+                {currentStage === 'Supplication' && activeItem.cards.length > 0 && (
                   <div className="pt-2">
                     {isAddingNewPrayer ? (
                       <div className="p-3 sm:p-4 rounded-xl bg-neutral-950/80 border border-neutral-700/80 space-y-2.5 animate-fadeIn">

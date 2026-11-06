@@ -808,8 +808,8 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                         >
                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-0">
                             {/* LEFT NODE: Person Name & Action Buttons */}
-                            <div className="w-full sm:w-36 md:w-44 shrink-0 relative flex items-center pr-0 py-1">
-                              <div className="relative group/name shrink-0 max-w-[calc(100%-12px)]">
+                            <div className="shrink-0 relative flex items-center py-1 max-w-[200px] sm:max-w-[240px]">
+                              <div className="relative group/name shrink-0 max-w-full">
                                 <InlineEditableText
                                   value={group.rootTitle}
                                   onSave={(newVal) => {
@@ -854,13 +854,13 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                   </div>
                                 </div>
                               </div>
-
-                              {/* Horizontal connector line: starts immediately next to the person's name and stretches rightward */}
-                              <div className="hidden sm:block flex-1 h-[1.5px] bg-neutral-700/80 min-w-[8px]" />
                             </div>
 
+                            {/* Horizontal connector line: identical small gap (w-7 = 28px) regardless of person's name */}
+                            <div className="hidden sm:block w-7 shrink-0 h-[1.5px] bg-neutral-700/80" />
+
                             {/* RIGHT SIDE: Horizontal tree chart branching to each prayer request */}
-                            <div className="relative flex-1 min-w-0 sm:pl-5 space-y-2 py-0.5">
+                            <div className={`relative flex-1 min-w-0 ${totalRows > 1 ? 'sm:pl-5' : ''} space-y-2 py-0.5`}>
                               {allSubCards.map((card, cIdx) => {
                                 const isTop = cIdx === 0;
                                 const isBottom = cIdx === totalRows - 1;
@@ -870,8 +870,10 @@ export const GuidedSessionModal: React.FC<GuidedSessionModalProps> = ({
                                     key={card.createdDate + cIdx}
                                     className="group/sub relative flex items-center"
                                   >
-                                    {/* Horizontal branch line directly into this request card */}
-                                    <div className="hidden sm:block absolute -left-5 top-1/2 -translate-y-1/2 w-5 h-[1.5px] bg-neutral-700/80" />
+                                    {/* Horizontal branch line directly into this request card (only if multi-row tree) */}
+                                    {totalRows > 1 && (
+                                      <div className="hidden sm:block absolute -left-5 top-1/2 -translate-y-1/2 w-5 h-[1.5px] bg-neutral-700/80" />
+                                    )}
 
                                     {/* Vertical rail connecting branches (only if > 1 card/row). NEVER extends above top card or below bottom card! */}
                                     {totalRows > 1 && (
